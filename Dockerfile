@@ -26,6 +26,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV DATABASE_URL="file:./prisma/dev.db"
+ENV JWT_SECRET="super-secure-secret-key-calendar-sales-2026"
 
 COPY package*.json ./
 COPY server/package*.json ./server/
