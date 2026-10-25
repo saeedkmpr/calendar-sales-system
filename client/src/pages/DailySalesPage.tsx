@@ -330,12 +330,12 @@ export const DailySalesPage: React.FC = () => {
       {/* Top Navigation & Action Bar */}
       <div className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
         {/* Day Switcher Tabs (Dynamic based on campaign duration) */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-nowrap -mx-1 px-1 touch-pan-x">
           {Array.from({ length: currentCampaign?.durationDays || 7 }, (_, i) => i + 1).map((d) => (
             <button
               key={d}
               onClick={() => navigate(`/days/${d}`)}
-              className={`px-3.5 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3.5 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
                 dayNumber === d
                   ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/30'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -592,6 +592,23 @@ export const DailySalesPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Floating Save Button on Mobile */}
+      {isDirty && canEdit && (
+        <div className="md:hidden fixed bottom-16 left-3 right-3 z-40 bg-emerald-700 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between border border-emerald-500 animate-in slide-in-from-bottom-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+            <span className="text-xs font-bold leading-tight">മാറ്റങ്ങൾ സേവ് ചെയ്തിട്ടില്ല</span>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-4 py-2 bg-white text-emerald-800 rounded-xl font-black text-xs shadow-md hover:bg-emerald-50 transition-colors flex items-center gap-1.5 shrink-0"
+          >
+            <Save className="w-4 h-4 text-emerald-700" />
+            <span>{isSaving ? 'സേവിംഗ്...' : 'സേവ് ചെയ്യുക *'}</span>
+          </button>
         </div>
       )}
     </div>

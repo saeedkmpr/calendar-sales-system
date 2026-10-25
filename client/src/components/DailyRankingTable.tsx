@@ -85,8 +85,8 @@ export const DailyRankingTable: React.FC<DailyRankingTableProps> = ({
           <thead className="sticky top-0 z-20 bg-emerald-800 text-white select-none">
             {isDay1 ? (
               <tr>
-                <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center w-16">{t.rankingCols.rank}</th>
-                <th className="py-3 px-3 border-b border-emerald-700 font-semibold min-w-[170px]">{t.rankingCols.studentName}</th>
+                <th className="py-3 px-2 border-b border-emerald-700 font-semibold text-center w-12 sticky left-0 bg-emerald-800 z-30">#</th>
+                <th className="py-3 px-3 border-b border-emerald-700 font-semibold min-w-[160px] sticky left-12 bg-emerald-800 z-30 border-r border-emerald-700 shadow-xs">{t.rankingCols.studentName}</th>
                 <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center">{t.rankingCols.sold}</th>
                 <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center">{t.rankingCols.cashReceived} ({currency})</th>
                 <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center">{t.rankingCols.expenses} ({currency})</th>
@@ -95,8 +95,8 @@ export const DailyRankingTable: React.FC<DailyRankingTableProps> = ({
               </tr>
             ) : (
               <tr>
-                <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center w-16">{t.rankingCols.rank}</th>
-                <th className="py-3 px-3 border-b border-emerald-700 font-semibold min-w-[170px]">{t.rankingCols.studentName}</th>
+                <th className="py-3 px-2 border-b border-emerald-700 font-semibold text-center w-12 sticky left-0 bg-emerald-800 z-30">#</th>
+                <th className="py-3 px-3 border-b border-emerald-700 font-semibold min-w-[160px] sticky left-12 bg-emerald-800 z-30 border-r border-emerald-700 shadow-xs">{t.rankingCols.studentName}</th>
                 <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center">{t.rankingCols.sold}</th>
                 <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center">{t.rankingCols.cashReceived} ({currency})</th>
                 <th className="py-3 px-3 border-b border-emerald-700 font-semibold text-center">{t.rankingCols.expenses} ({currency})</th>
@@ -121,16 +121,16 @@ export const DailyRankingTable: React.FC<DailyRankingTableProps> = ({
                       : 'bg-slate-50/40'
                   }`}
                 >
-                  {/* Rank */}
-                  <td className="py-2.5 px-3 text-center">
+                  {/* Rank Sticky */}
+                  <td className="py-2.5 px-2 text-center sticky left-0 bg-white z-10">
                     {renderRankBadge(row.rank)}
                   </td>
 
-                  {/* Student Name */}
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center gap-2">
+                  {/* Student Name Sticky */}
+                  <td className="py-2.5 px-3 sticky left-12 bg-white z-10 border-r border-emerald-100 shadow-xs">
+                    <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-slate-800">{row.studentName}</span>
-                      <span className="text-2xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
+                      <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
                         {row.studentCode}
                       </span>
                     </div>

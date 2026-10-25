@@ -10,12 +10,17 @@ import {
   FolderKanban,
   UserCog,
   History,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCampaign } from '../context/CampaignContext';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const { t, language } = useLanguage();
   const { currentCampaign } = useCampaign();
@@ -38,6 +43,17 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col shrink-0 min-h-[calc(100vh-4rem)]">
+      {/* Mobile Top Header with Close Button */}
+      <div className="md:hidden p-4 pb-0 flex items-center justify-between border-b border-slate-800 pb-3">
+        <span className="font-bold text-sm text-emerald-400">മെനു ലിങ്ക്സ്</span>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
       <div className="p-4 space-y-6 flex-1 overflow-y-auto">
         {/* Main Section */}
         <div>
@@ -47,6 +63,7 @@ export const Sidebar: React.FC = () => {
           <nav className="space-y-1">
             <NavLink
               to="/dashboard"
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -61,6 +78,7 @@ export const Sidebar: React.FC = () => {
 
             <NavLink
               to="/summary"
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -75,6 +93,7 @@ export const Sidebar: React.FC = () => {
 
             <NavLink
               to="/leaderboard"
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -89,6 +108,7 @@ export const Sidebar: React.FC = () => {
 
             <NavLink
               to="/camps"
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -103,6 +123,7 @@ export const Sidebar: React.FC = () => {
 
             <NavLink
               to="/students"
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -117,6 +138,7 @@ export const Sidebar: React.FC = () => {
 
             <NavLink
               to="/campaigns"
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
@@ -142,6 +164,7 @@ export const Sidebar: React.FC = () => {
               <NavLink
                 key={item.day}
                 to={item.to}
+                onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center justify-center py-2 px-2.5 rounded-md text-xs font-semibold text-center transition-all ${
                     isActive
@@ -165,6 +188,7 @@ export const Sidebar: React.FC = () => {
             <nav className="space-y-1">
               <NavLink
                 to="/users"
+                onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
@@ -179,6 +203,7 @@ export const Sidebar: React.FC = () => {
 
               <NavLink
                 to="/audit-logs"
+                onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive

@@ -843,9 +843,8 @@ export const CampsPage: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-3 text-center w-12">റാങ്ക്</th>
-                    <th className="py-3 px-3 w-20">കോഡ്</th>
-                    <th className="py-3 px-4">വിദ്യാർത്ഥിയുടെ പേര്</th>
+                    <th className="py-3 px-2 text-center w-12 sticky left-0 bg-slate-50 z-20">റാങ്ക്</th>
+                    <th className="py-3 px-3 min-w-[170px] sticky left-12 bg-slate-50 z-20 border-r border-slate-200 shadow-xs">വിദ്യാർത്ഥിയുടെ പേര്</th>
                     <th className="py-3 px-3 text-right">ലക്ഷ്യം</th>
                     <th className="py-3 px-3 text-right">ബാക്കി ലക്ഷ്യം</th>
                     <th className="py-3 px-3 text-right">കൊണ്ടുപോയത്</th>
@@ -862,7 +861,7 @@ export const CampsPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={14} className="py-10 text-center text-slate-400">
+                      <td colSpan={13} className="py-10 text-center text-slate-400">
                         {searchQuery
                           ? 'തിരഞ്ഞ പേരിൽ കുട്ടികളെ കണ്ടെത്തിയില്ല.'
                           : 'ഈ ക്യാമ്പിൽ ഇതുവരെ കുട്ടികളെ ചേർത്തിട്ടില്ല. മുകളിലെ ബട്ടൺ ഉപയോഗിച്ച് ചേർക്കാവുന്നതാണ്.'}
@@ -871,20 +870,19 @@ export const CampsPage: React.FC = () => {
                   ) : (
                     filteredStudents.map((student) => {
                       const isTop3 = student.rank <= 3;
+                      const rowBg = student.rank === 1
+                        ? 'bg-amber-50/40'
+                        : student.rank === 2
+                        ? 'bg-slate-50/60'
+                        : student.rank === 3
+                        ? 'bg-orange-50/30'
+                        : 'bg-white';
                       return (
                         <tr
                           key={student.studentId}
-                          className={`hover:bg-slate-50/80 transition-colors ${
-                            student.rank === 1
-                              ? 'bg-amber-50/40'
-                              : student.rank === 2
-                              ? 'bg-slate-50/60'
-                              : student.rank === 3
-                              ? 'bg-orange-50/30'
-                              : ''
-                          }`}
+                          className={`hover:bg-slate-50/80 transition-colors ${rowBg}`}
                         >
-                          <td className="py-2.5 px-3 text-center font-bold">
+                          <td className={`py-2.5 px-2 text-center font-bold sticky left-0 z-10 ${rowBg}`}>
                             {student.rank === 1 ? (
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400 text-amber-950 text-xs font-black shadow-sm">
                                 1
@@ -901,11 +899,13 @@ export const CampsPage: React.FC = () => {
                               <span className="text-slate-500 font-semibold">{student.rank}</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3 font-mono font-medium text-slate-600">
-                            {student.studentCode}
-                          </td>
-                          <td className="py-2.5 px-4 font-semibold text-slate-900">
-                            {student.studentName}
+                          <td className={`py-2.5 px-3 sticky left-12 z-10 border-r border-slate-200 shadow-xs ${rowBg}`}>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-slate-900">{student.studentName}</span>
+                              <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
+                                {student.studentCode}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-2.5 px-3 text-right text-slate-600">
                             {student.target}
@@ -938,11 +938,11 @@ export const CampsPage: React.FC = () => {
                             <span
                               className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 student.progressPercentage >= 100
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : student.progressPercentage >= 50
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-slate-100 text-slate-700'
-                            }`}
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : student.progressPercentage >= 50
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}
                             >
                               {student.progressPercentage}%
                             </span>
@@ -970,7 +970,7 @@ export const CampsPage: React.FC = () => {
                 {filteredStudents.length > 0 && (
                   <tfoot>
                     <tr className="bg-emerald-950 text-white font-bold border-t-2 border-emerald-900 text-[11px]">
-                      <td colSpan={3} className="py-3 px-4 uppercase tracking-wider text-right">
+                      <td colSpan={2} className="py-3 px-4 uppercase tracking-wider text-left sticky left-0 bg-emerald-950 z-10 border-r border-emerald-900 shadow-xs">
                         ആകെ തുക (TOTAL):
                       </td>
                       <td className="py-3 px-3 text-right">{activeCamp.totals.totalTarget}</td>
@@ -999,7 +999,7 @@ export const CampsPage: React.FC = () => {
                       <td className="py-3 px-3 text-center text-emerald-300">
                         {activeCamp.totals.progressPercentage}%
                       </td>
-                      <td className="py-3 px-3 print:hidden"></td>
+                      <td className="py-3 px-3 text-center print:hidden"></td>
                     </tr>
                   </tfoot>
                 )}

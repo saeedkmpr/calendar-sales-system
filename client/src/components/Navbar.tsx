@@ -11,13 +11,18 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
+  Menu,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCampaign } from '../context/CampaignContext';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onToggleMobileMenu?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
   const { user, logout } = useAuth();
   const { campaigns, currentCampaign, setCurrentCampaign } = useCampaign();
   const { language, toggleLanguage, t } = useLanguage();
@@ -91,32 +96,41 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-      <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-        {/* Brand / Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-md">
-            <Calendar className="w-6 h-6" />
+      <div className="px-3 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        {/* Brand / Logo + Mobile Menu Button */}
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+          <button
+            onClick={onToggleMobileMenu}
+            className="md:hidden p-2 rounded-lg text-slate-700 hover:text-emerald-700 hover:bg-slate-100 transition-colors -ml-1 shrink-0"
+            title="മെനു തുറക്കുക"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-md shrink-0">
+            <Calendar className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+          <div className="min-w-0">
+            <h1 className="text-xs sm:text-base font-bold text-slate-900 leading-tight truncate max-w-[120px] xs:max-w-[160px] sm:max-w-none">
               {t.appTitle}
             </h1>
-            <p className="text-xs text-slate-500 hidden sm:block">
+            <p className="text-xs text-slate-500 hidden sm:block truncate">
               {currentCampaign?.institutionName || t.appSubtitle}
             </p>
           </div>
         </div>
 
         {/* Right Section: Language Toggle + Campaign Selector + User Info + Logout */}
-        <div className="flex items-center gap-2.5 sm:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
           {/* Language Switcher Pill */}
           <button
             onClick={toggleLanguage}
             title={language === 'ml' ? 'Switch to English' : 'മലയാളത്തിലേക്ക് മാറ്റുക'}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 text-xs font-bold transition-all shadow-2xs"
+            className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 text-[11px] sm:text-xs font-bold transition-all shadow-2xs"
           >
-            <Languages className="w-4 h-4 text-emerald-600" />
-            <span>{language === 'ml' ? 'English' : 'മലയാളം'}</span>
+            <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
+            <span className="hidden xs:inline">{language === 'ml' ? 'English' : 'മലയാളം'}</span>
+            <span className="xs:hidden">{language === 'ml' ? 'EN' : 'ML'}</span>
           </button>
 
           {/* Campaign Selector */}
@@ -129,15 +143,15 @@ export const Navbar: React.FC = () => {
                   const selected = campaigns.find((c) => c.id === e.target.value);
                   if (selected) setCurrentCampaign(selected);
                 }}
-                className="text-xs sm:text-sm font-medium bg-slate-50 border border-slate-300 rounded-lg py-1.5 pl-3 pr-8 text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer appearance-none"
+                className="text-[11px] sm:text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg py-1.5 pl-2 sm:pl-3 pr-6 sm:pr-8 text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer appearance-none max-w-[100px] xs:max-w-[140px] sm:max-w-none truncate"
               >
                 {campaigns.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} (₹{c.calendarPrice})
+                    {c.name}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           )}
 
