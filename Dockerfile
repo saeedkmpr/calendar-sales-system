@@ -30,7 +30,7 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
-ENV DATABASE_URL="file:./prisma/dev.db"
+ENV DATABASE_URL="file:/app/server/prisma/dev.db"
 ENV JWT_SECRET="super-secure-secret-key-calendar-sales-2026"
 
 # Install openssl for Prisma runtime
@@ -48,6 +48,10 @@ COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/prisma ./server/prisma
 COPY --from=builder /app/server/node_modules/.prisma ./server/node_modules/.prisma
 COPY --from=builder /app/server/node_modules/@prisma ./server/node_modules/@prisma
+
+# Provide database files at both /app/server/prisma and /app/prisma, and set full write permissions
+RUN mkdir -p /app/prisma && cp -r /app/server/prisma/* /app/prisma/ 2>/dev/null || true
+RUN chmod -R 777 /app/server/prisma /app/prisma 2>/dev/null || true
 
 EXPOSE 5000
 

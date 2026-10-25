@@ -2,35 +2,41 @@ import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 
-// If database file doesn't exist yet, seed it from initial_data.db
-const dbPaths = [
-  path.resolve(__dirname, '../prisma/dev.db'),
-  path.resolve(__dirname, '../../prisma/dev.db'),
-  path.resolve(process.cwd(), 'server/prisma/dev.db'),
-  path.resolve(process.cwd(), 'prisma/dev.db'),
-];
-const templatePaths = [
-  path.resolve(__dirname, '../prisma/initial_data.db'),
-  path.resolve(__dirname, '../../prisma/initial_data.db'),
-  path.resolve(process.cwd(), 'server/prisma/initial_data.db'),
-  path.resolve(process.cwd(), 'prisma/initial_data.db'),
-];
+// Calculate exact absolute paths for database
+const prismaDir = path.resolve(__dirname, '../prisma');
+const devDbPath = path.join(prismaDir, 'dev.db');
+const initialDbPath = path.join(prismaDir, 'initial_data.db');
 
-const templateFile = templatePaths.find((p) => fs.existsSync(p));
-const targetFile = dbPaths.find((p) => fs.existsSync(path.dirname(p)));
+// Ensure directory exists
+if (!fs.existsSync(prismaDir)) {
+  fs.mkdirSync(prismaDir, { recursive: true });
+}
 
-if (templateFile && targetFile && !fs.existsSync(targetFile)) {
+// If dev.db doesn't exist, copy from initial_data.db
+if (!fs.existsSync(devDbPath) && fs.existsSync(initialDbPath)) {
   try {
-    fs.copyFileSync(templateFile, targetFile);
-    console.log('✅ Initialized database from initial_data.db template');
+    fs.copyFileSync(initialDbPath, devDbPath);
+    console.log('✅ Initialized SQLite database from initial_data.db template');
   } catch (err) {
     console.error('Warning: could not copy initial database:', err);
   }
 }
 
+// Ensure proper DATABASE_URL
+const dbUrl = `file:${devDbPath}`;
+process.env.DATABASE_URL = dbUrl;
+
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma = globalForPrisma.prisma || new PrismaClient();
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: dbUrl,
+      },
+    },
+  });
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
