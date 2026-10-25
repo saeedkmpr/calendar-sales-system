@@ -156,3 +156,48 @@ usersRouter.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
     res.status(400).json({ error: error.message || 'അപ്ഡേറ്റ് ചെയ്യാൻ സാധിച്ചില്ല' });
   }
 });
+
+const adminChangePasswordSchema = z.object({
+  newPassword: z.string().min(6, 'പാസ്‌വേഡ് കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം'),
+});
+
+// PUT /api/users/:id/password (Admin resetting any user's password directly)
+usersRouter.put('/:id/password', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const parseResult = adminChangePasswordSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: parseResult.error.errors[0].message });
+      return;
+    }
+
+    const { newPassword } = parseResult.data;
+
+    const existing = await prisma.user.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: 'ഉപയോക്താവിനെ കണ്ടെത്താനായില്ല' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    await createAuditLog({
+      userId: req.user?.id,
+      userName: req.user?.name,
+      action: 'PASSWORD_RESET',
+      entityType: 'USER',
+      entityId: existing.id,
+      newValues: { targetUser: existing.username, resetBy: req.user?.name },
+    });
+
+    res.json({ message: `"${existing.name}" (${existing.username}) എന്ന ഉപയോക്താവിന്റെ പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!` });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'പാസ്‌വേഡ് മാറ്റാൻ സാധിച്ചില്ല' });
+  }
+});

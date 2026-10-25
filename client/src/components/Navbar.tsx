@@ -1,13 +1,35 @@
-import React from 'react';
-import { Calendar, UserCheck, LogOut, ChevronDown, ShieldCheck, Languages } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Calendar,
+  UserCheck,
+  LogOut,
+  ChevronDown,
+  ShieldCheck,
+  Languages,
+  KeyRound,
+  X,
+  Eye,
+  EyeOff,
+  CheckCircle,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCampaign } from '../context/CampaignContext';
 import { useLanguage } from '../context/LanguageContext';
+import { api } from '../services/api';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { campaigns, currentCampaign, setCurrentCampaign } = useCampaign();
   const { language, toggleLanguage, t } = useLanguage();
+
+  const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
+  const [currentPassword, setCurrentPassword] = useState<string>('');
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [showPasswordText, setShowPasswordText] = useState<boolean>(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -31,6 +53,39 @@ export const Navbar: React.FC = () => {
             {t.roles.VIEWER.split(' ')[0]}
           </span>
         );
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setPasswordError('പുതിയ പാസ്‌വേഡ് കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('നൽകിയ രണ്ട് പുതിയ പാസ്‌വേഡുകളും ഒരേപോലെയല്ല');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setPasswordError(null);
+      await api.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+      setPasswordSuccess('പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!');
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setPasswordSuccess(null);
+      }, 2000);
+    } catch (err: any) {
+      setPasswordError(err.message || 'പാസ്‌വേഡ് മാറ്റാൻ കഴിഞ്ഞില്ല');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -86,13 +141,31 @@ export const Navbar: React.FC = () => {
             </div>
           )}
 
-          {/* User Info & Badge */}
+          {/* User Info & Badge & Password Change */}
           {user && (
             <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200">
               <div className="hidden md:flex flex-col text-right">
                 <span className="text-sm font-semibold text-slate-800">{user.name}</span>
                 {getRoleBadge(user.role)}
               </div>
+
+              {/* Change My Password Button */}
+              <button
+                onClick={() => {
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setPasswordError(null);
+                  setPasswordSuccess(null);
+                  setShowPasswordModal(true);
+                }}
+                title="എന്റെ പാസ്‌വേഡ് മാറ്റുക (Change Password)"
+                className="p-2 text-slate-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+              >
+                <KeyRound className="w-4 h-4" />
+              </button>
+
+              {/* Logout Button */}
               <button
                 onClick={logout}
                 title={t.nav.logout}
@@ -104,6 +177,114 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* ================= MODAL: SELF CHANGE PASSWORD ================= */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">എന്റെ പാസ്‌വേഡ് മാറ്റുക</h3>
+                  <p className="text-xs text-slate-500">{user?.name} ({user?.username})</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit} className="p-5 space-y-4">
+              {passwordError && (
+                <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+                  {passwordError}
+                </div>
+              )}
+              {passwordSuccess && (
+                <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>{passwordSuccess}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  നിലവിലെ പാസ്‌വേഡ് <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type={showPasswordText ? 'text' : 'password'}
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="നിങ്ങളുടെ നിലവിലെ പാസ്‌വേഡ്"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  പുതിയ പാസ്‌വേഡ് <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPasswordText ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ"
+                    className="w-full px-3 py-2 pr-10 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordText(!showPasswordText)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPasswordText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  പുതിയ പാസ്‌വേഡ് ആവർത്തിക്കുക <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type={showPasswordText ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="മുകളിൽ നൽകിയ അതേ പുതിയ പാസ്‌വേഡ്"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  റദ്ദാക്കുക
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'മാറ്റുന്നു...' : 'പാസ്‌വേഡ് മാറ്റുക'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
+export default Navbar;

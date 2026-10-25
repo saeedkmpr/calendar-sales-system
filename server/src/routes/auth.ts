@@ -111,3 +111,60 @@ authRouter.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: 
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'നിലവിലെ പാസ്‌വേഡ് നൽകണം'),
+  newPassword: z.string().min(6, 'പുതിയ പാസ്‌വേഡ് കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം'),
+});
+
+// POST /api/auth/change-password
+authRouter.post('/change-password', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const parseResult = changePasswordSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: parseResult.error.errors[0].message });
+      return;
+    }
+
+    const { currentPassword, newPassword } = parseResult.data;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ error: 'ഉപയോക്താവിനെ കണ്ടെത്താനായില്ല' });
+      return;
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      res.status(400).json({ error: 'നിലവിലെ പാസ്‌വേഡ് തെറ്റാണ്' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    await createAuditLog({
+      userId: user.id,
+      userName: user.name,
+      action: 'UPDATE',
+      entityType: 'USER',
+      entityId: user.id,
+      newValues: { message: 'User updated own password' },
+    });
+
+    res.json({ message: 'പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'പാസ്‌വേഡ് മാറ്റാൻ കഴിഞ്ഞില്ല' });
+  }
+});
