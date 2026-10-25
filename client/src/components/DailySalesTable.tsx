@@ -63,10 +63,10 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                   ? 'bg-white text-emerald-800 shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
-              title="ടേബിൾ രൂപത്തിൽ കാണുക"
+              title={language === 'en' ? 'View as Table' : 'ടേബിൾ രൂപത്തിൽ കാണുക'}
             >
               <TableIcon className="w-3.5 h-3.5" />
-              <span>ടേബിൾ</span>
+              <span>{language === 'en' ? 'Table' : 'ടേബിൾ'}</span>
             </button>
             <button
               onClick={() => setViewMode('cards')}
@@ -75,10 +75,10 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                   ? 'bg-white text-emerald-800 shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
-              title="മൊബൈൽ കാർഡ് രൂപത്തിൽ കാണുക"
+              title={language === 'en' ? 'View as Mobile Cards' : 'മൊബൈൽ കാർഡ് രൂപത്തിൽ കാണുക'}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span>കാർഡുകൾ</span>
+              <span>{language === 'en' ? 'Cards' : 'കാർഡുകൾ'}</span>
             </button>
           </div>
 
@@ -106,17 +106,19 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                     </span>
                     <div>
                       <div className="font-bold text-slate-900 text-sm">{row.studentName}</div>
-                      <div className="text-[11px] font-mono text-slate-500">കോഡ്: {row.studentCode}</div>
+                      <div className="text-[11px] font-mono text-slate-500">
+                        {language === 'en' ? 'Code:' : 'കോഡ്:'} {row.studentCode}
+                      </div>
                     </div>
                   </div>
 
                   <div className="text-right">
                     <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                      ലക്ഷ്യം: {row.target}
+                      {language === 'en' ? 'Target:' : 'ലക്ഷ്യം:'} {row.target}
                     </span>
                     {!isDay1 && (
                       <div className="text-[11px] font-medium text-amber-700 mt-0.5">
-                        ബാക്കി: {d.targetRemaining}
+                        {language === 'en' ? 'Rem:' : 'ബാക്കി:'} {d.targetRemaining}
                       </div>
                     )}
                   </div>
@@ -127,7 +129,7 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                   {/* Calendars Taken */}
                   <div className="bg-slate-50/80 p-2.5 rounded-lg border border-slate-200">
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      📥 കൊണ്ടുപോയത് (Taken)
+                      {language === 'en' ? '📥 Taken' : '📥 കൊണ്ടുപോയത് (Taken)'}
                     </label>
                     <input
                       type="number"
@@ -144,7 +146,7 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                   {/* Calendars Sold */}
                   <div className="bg-slate-50/80 p-2.5 rounded-lg border border-slate-200">
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      🏷️ വിറ്റത് (Sold)
+                      {language === 'en' ? '🏷️ Sold' : '🏷️ വിറ്റത് (Sold)'}
                     </label>
                     <input
                       type="number"
@@ -165,7 +167,7 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                   {/* Cash Received */}
                   <div className="bg-slate-50/80 p-2.5 rounded-lg border border-slate-200">
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      💵 ലഭിച്ച തുക ({currency})
+                      {language === 'en' ? `💵 Cash (${currency})` : `💵 ലഭിച്ച തുക (${currency})`}
                     </label>
                     <input
                       type="number"
@@ -182,7 +184,7 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                   {/* Expenses */}
                   <div className="bg-slate-50/80 p-2.5 rounded-lg border border-slate-200">
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      🧾 ചിലവ് ({currency})
+                      {language === 'en' ? `🧾 Expenses (${currency})` : `🧾 ചിലവ് (${currency})`}
                     </label>
                     <input
                       type="number"
@@ -200,17 +202,23 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
                 {/* Card Calculated Results Footer */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs bg-emerald-50/50 -mx-3.5 -mb-3.5 p-3 rounded-b-xl">
                   <div>
-                    <span className="text-[11px] text-slate-500 block">ബാക്കി സ്റ്റോക്ക്</span>
-                    <span className="font-bold text-slate-800">{row.remainingCalendars} കലണ്ടർ</span>
+                    <span className="text-[11px] text-slate-500 block">
+                      {language === 'en' ? 'Stock' : 'ബാക്കി സ്റ്റോക്ക്'}
+                    </span>
+                    <span className="font-bold text-slate-800">{row.remainingCalendars} {language === 'en' ? 'Cal.' : 'കലണ്ടർ'}</span>
                   </div>
 
                   <div>
-                    <span className="text-[11px] text-slate-500 block">ശരാശരി</span>
+                    <span className="text-[11px] text-slate-500 block">
+                      {language === 'en' ? 'Average' : 'ശരാശരി'}
+                    </span>
                     <span className="font-medium text-slate-700">{currency} {row.average}</span>
                   </div>
 
                   <div className="text-right">
-                    <span className="text-[11px] text-emerald-800 font-bold block">അന്നത്തെ ബാക്കി കാശ്</span>
+                    <span className="text-[11px] text-emerald-800 font-bold block">
+                      {language === 'en' ? 'Net Cash' : 'അന്നത്തെ ബാക്കി കാശ്'}
+                    </span>
                     <span className="font-black text-sm text-emerald-700">
                       {currency} {row.netCash.toLocaleString('en-IN')}
                     </span>
@@ -392,14 +400,20 @@ export const DailySalesTable: React.FC<DailySalesTableProps> = ({
       {/* Grand Totals Bar */}
       <div className="bg-slate-900 text-white p-3.5 sm:p-4 border-t-2 border-emerald-600 flex items-center justify-between flex-wrap gap-3">
         <div className="font-bold text-xs sm:text-sm uppercase tracking-wider text-emerald-400">
-          ആകെ തുക (TOTAL):
+          {language === 'en' ? 'TOTAL:' : 'ആകെ തുക (TOTAL):'}
         </div>
         <div className="flex items-center gap-4 text-xs sm:text-sm font-semibold flex-wrap">
-          <div>വിറ്റത്: <span className="text-emerald-300 font-black">{totals.calendarsSold}</span></div>
-          <div>ലഭിച്ചത്: <span className="text-white font-black">{currency} {totals.cashReceived.toLocaleString('en-IN')}</span></div>
-          <div>ചിലവ്: <span className="text-rose-300 font-black">{currency} {totals.expenses.toLocaleString('en-IN')}</span></div>
+          <div>
+            {language === 'en' ? 'Sold:' : 'വിറ്റത്:'} <span className="text-emerald-300 font-black">{totals.calendarsSold}</span>
+          </div>
+          <div>
+            {language === 'en' ? 'Received:' : 'ലഭിച്ചത്:'} <span className="text-white font-black">{currency} {totals.cashReceived.toLocaleString('en-IN')}</span>
+          </div>
+          <div>
+            {language === 'en' ? 'Expenses:' : 'ചിലവ്:'} <span className="text-rose-300 font-black">{currency} {totals.expenses.toLocaleString('en-IN')}</span>
+          </div>
           <div className="bg-emerald-600 px-3 py-1 rounded-lg text-white font-black text-sm">
-            ആകെ ബാക്കി: {currency} {totals.netCash.toLocaleString('en-IN')}
+            {language === 'en' ? 'Net Cash:' : 'ആകെ ബാക്കി:'} {currency} {totals.netCash.toLocaleString('en-IN')}
           </div>
         </div>
       </div>

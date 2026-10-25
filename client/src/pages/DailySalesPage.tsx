@@ -599,7 +599,9 @@ export const DailySalesPage: React.FC = () => {
         <div className="md:hidden fixed bottom-16 left-3 right-3 z-40 bg-emerald-700 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between border border-emerald-500 animate-in slide-in-from-bottom-4">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-            <span className="text-xs font-bold leading-tight">മാറ്റങ്ങൾ സേവ് ചെയ്തിട്ടില്ല</span>
+            <span className="text-xs font-bold leading-tight">
+              {language === 'en' ? 'Unsaved changes' : 'മാറ്റങ്ങൾ സേവ് ചെയ്തിട്ടില്ല'}
+            </span>
           </div>
           <button
             onClick={handleSave}
@@ -607,7 +609,11 @@ export const DailySalesPage: React.FC = () => {
             className="px-4 py-2 bg-white text-emerald-800 rounded-xl font-black text-xs shadow-md hover:bg-emerald-50 transition-colors flex items-center gap-1.5 shrink-0"
           >
             <Save className="w-4 h-4 text-emerald-700" />
-            <span>{isSaving ? 'സേവിംഗ്...' : 'സേവ് ചെയ്യുക *'}</span>
+            <span>
+              {isSaving
+                ? (language === 'en' ? 'Saving...' : 'സേവിംഗ്...')
+                : (language === 'en' ? 'Save Changes *' : 'സേവ് ചെയ്യുക *')}
+            </span>
           </button>
         </div>
       )}

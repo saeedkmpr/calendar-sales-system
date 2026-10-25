@@ -45,7 +45,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col shrink-0 min-h-[calc(100vh-4rem)]">
       {/* Mobile Top Header with Close Button */}
       <div className="md:hidden p-4 pb-0 flex items-center justify-between border-b border-slate-800 pb-3">
-        <span className="font-bold text-sm text-emerald-400">മെനു ലിങ്ക്സ്</span>
+        <span className="font-bold text-sm text-emerald-400">
+          {language === 'en' ? 'Navigation Menu' : 'മെനു ലിങ്ക്സ്'}
+        </span>
         <button
           onClick={onClose}
           className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white"

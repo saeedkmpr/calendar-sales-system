@@ -72,7 +72,7 @@ interface CampData {
 export const CampsPage: React.FC = () => {
   const { currentCampaign } = useCampaign();
   const { isAdmin, isOperator } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [camps, setCamps] = useState<CampData[]>([]);
@@ -170,7 +170,7 @@ export const CampsPage: React.FC = () => {
     e.preventDefault();
     if (!currentCampaign) return;
     if (!campName.trim()) {
-      setFormError('ക്യാമ്പിന്റെ പേര് ആവശ്യമാണ്');
+      setFormError(t.camps.campRequired);
       return;
     }
 
@@ -191,7 +191,7 @@ export const CampsPage: React.FC = () => {
       await fetchCamps();
       setActiveTab(res.id);
     } catch (err: any) {
-      setFormError(err.message || 'ക്യാമ്പ് ഉണ്ടാക്കുന്നതിൽ പരാജയപ്പെട്ടു');
+      setFormError(err.message || (language === 'en' ? 'Failed to create camp' : 'ക്യാമ്പ് ഉണ്ടാക്കുന്നതിൽ പരാജയപ്പെട്ടു'));
     } finally {
       setIsSubmitting(false);
     }
@@ -211,7 +211,7 @@ export const CampsPage: React.FC = () => {
     e.preventDefault();
     if (!activeCamp) return;
     if (!campName.trim()) {
-      setFormError('ക്യാമ്പിന്റെ പേര് ആവശ്യമാണ്');
+      setFormError(t.camps.campRequired);
       return;
     }
 
@@ -227,7 +227,7 @@ export const CampsPage: React.FC = () => {
       setShowEditModal(false);
       await fetchCamps();
     } catch (err: any) {
-      setFormError(err.message || 'ക്യാമ്പ് വിവരങ്ങൾ മാറ്റാൻ കഴിഞ്ഞില്ല');
+      setFormError(err.message || (language === 'en' ? 'Failed to update camp' : 'ക്യാമ്പ് വിവരങ്ങൾ മാറ്റാൻ കഴിഞ്ഞില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -244,7 +244,7 @@ export const CampsPage: React.FC = () => {
       }
       await fetchCamps();
     } catch (err: any) {
-      alert(err.message || 'ക്യാമ്പ് ഒഴിവാക്കാൻ കഴിഞ്ഞില്ല');
+      alert(err.message || (language === 'en' ? 'Failed to delete camp' : 'ക്യാമ്പ് ഒഴിവാക്കാൻ കഴിഞ്ഞില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -254,7 +254,7 @@ export const CampsPage: React.FC = () => {
   const handleAssignStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCamp || !selectedStudentId) {
-      setFormError('വിദ്യാർത്ഥിയെ തിരഞ്ഞെടുക്കുക');
+      setFormError(t.camps.selectStudentRequired);
       return;
     }
     try {
@@ -268,7 +268,7 @@ export const CampsPage: React.FC = () => {
       setStudentSearchFilter('');
       await fetchCamps();
     } catch (err: any) {
-      setFormError(err.message || 'വിദ്യാർത്ഥിയെ ക്യാമ്പിലേക്ക് ചേർക്കാൻ കഴിഞ്ഞില്ല');
+      setFormError(err.message || (language === 'en' ? 'Failed to add student to camp' : 'വിദ്യാർത്ഥിയെ ക്യാമ്പിലേക്ക് ചേർക്കാൻ കഴിഞ്ഞില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -279,7 +279,7 @@ export const CampsPage: React.FC = () => {
     e.preventDefault();
     if (!activeCamp) return;
     if (!newStudentCode.trim() || !newStudentName.trim()) {
-      setFormError('കോഡും പേരും ആവശ്യമാണ്');
+      setFormError(t.camps.codeAndNameRequired);
       return;
     }
     try {
@@ -296,7 +296,7 @@ export const CampsPage: React.FC = () => {
       setNewStudentTarget(50);
       await fetchCamps();
     } catch (err: any) {
-      setFormError(err.message || 'പുതിയ കുട്ടിയെ ചേർക്കാൻ കഴിഞ്ഞില്ല');
+      setFormError(err.message || (language === 'en' ? 'Failed to register new student' : 'പുതിയ കുട്ടിയെ ചേർക്കാൻ കഴിഞ്ഞില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -306,7 +306,9 @@ export const CampsPage: React.FC = () => {
   const handleRemoveStudent = async (studentId: string, studentName: string) => {
     if (!activeCamp) return;
     const confirm = window.confirm(
-      `"${studentName}" എന്ന വിദ്യാർത്ഥിയെ ${activeCamp.name} ക്യാമ്പിൽ നിന്ന് ഒഴിവാക്കണോ? വിദ്യാർത്ഥിയുടെ വിവരങ്ങൾ പൂർണ്ണമായി ഇല്ലാതാകില്ല.`
+      t.camps.removeConfirm
+        .replace('{studentName}', studentName)
+        .replace('{campName}', activeCamp.name)
     );
     if (!confirm) return;
 
@@ -314,7 +316,7 @@ export const CampsPage: React.FC = () => {
       await api.delete(`/camps/${activeCamp.id}/students/${studentId}`);
       await fetchCamps();
     } catch (err: any) {
-      alert(err.message || 'വിദ്യാർത്ഥിയെ ക്യാമ്പിൽ നിന്ന് ഒഴിവാക്കാൻ കഴിഞ്ഞില്ല');
+      alert(err.message || (language === 'en' ? 'Failed to remove student from camp' : 'വിദ്യാർത്ഥിയെ ക്യാമ്പിൽ നിന്ന് ഒഴിവാക്കാൻ കഴിഞ്ഞില്ല'));
     }
   };
 
@@ -353,7 +355,7 @@ export const CampsPage: React.FC = () => {
   if (!currentCampaign) {
     return (
       <div className="p-8 text-center text-slate-500">
-        ദയവായി ഒരു ക്യാമ്പയിൻ തിരഞ്ഞെടുക്കുക.
+        {language === 'en' ? 'Please select a campaign.' : 'ദയവായി ഒരു ക്യാമ്പയിൻ തിരഞ്ഞെടുക്കുക.'}
       </div>
     );
   }
@@ -369,13 +371,13 @@ export const CampsPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <span>ടീം ക്യാമ്പുകൾ</span>
+                <span>{t.camps.title}</span>
                 <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  {camps.length} ക്യാമ്പുകൾ
+                  {camps.length} {t.camps.campCount}
                 </span>
               </h1>
               <p className="text-sm text-slate-500">
-                ക്യാമ്പ് തിരിച്ചുള്ള കലണ്ടർ വിൽപന, കുട്ടികളുടെ മാനേജ്‌മെന്റ് & താരതമ്യം
+                {t.camps.subtitle}
               </p>
             </div>
           </div>
@@ -396,17 +398,17 @@ export const CampsPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>പുതിയ ക്യാമ്പ് ചേർക്കുക</span>
+              <span>{t.camps.addCampBtn}</span>
             </button>
           )}
 
           <button
             onClick={handleNativePrint}
             className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium shadow-sm transition-colors"
-            title="A4 ലാൻഡ്‌സ്‌കേപ്പ് പ്രിന്റ് / PDF ആയി സേവ് ചെയ്യുക"
+            title={language === 'en' ? 'Print Landscape / Save as PDF' : 'A4 ലാൻഡ്‌സ്‌കേപ്പ് പ്രിന്റ് / PDF ആയി സേവ് ചെയ്യുക'}
           >
             <Printer className="w-4 h-4 text-slate-500" />
-            <span>പ്രിന്റ് / PDF</span>
+            <span>{t.camps.printPdfBtn}</span>
           </button>
         </div>
       </div>
@@ -422,7 +424,7 @@ export const CampsPage: React.FC = () => {
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>എല്ലാ ക്യാമ്പുകളും (സംഗ്രഹം)</span>
+          <span>{t.camps.overviewTab}</span>
           <span className="ml-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded-full font-medium">
             {camps.length}
           </span>
@@ -447,7 +449,7 @@ export const CampsPage: React.FC = () => {
                   : 'bg-slate-100 text-slate-600'
               }`}
             >
-              {camp.studentCount} കുട്ടികൾ
+              {camp.studentCount} {t.camps.studentsCount}
             </span>
           </button>
         ))}
@@ -456,7 +458,7 @@ export const CampsPage: React.FC = () => {
       {/* Loading state */}
       {isLoading ? (
         <div className="bg-white rounded-xl p-12 text-center text-slate-500 border border-slate-200">
-          വിവരങ്ങൾ ശേഖരിക്കുന്നു... ദയവായി കാത്തിരിക്കുക.
+          {t.camps.loadingMsg}
         </div>
       ) : activeTab === 'overview' ? (
         /* ================= OVERVIEW TAB: COMPARISON & SUMMARY ================= */
@@ -464,58 +466,58 @@ export const CampsPage: React.FC = () => {
           {/* Top KPI Cards for All Camps */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-xs font-semibold text-slate-500 uppercase">ക്യാമ്പ് കുട്ടികൾ</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase">{t.camps.campStudents}</div>
               <div className="text-2xl font-bold text-slate-900 mt-1">
                 {allCampsSummary.totalStudents}
               </div>
               <div className="text-xs text-slate-400 mt-0.5">
-                ഒഴിവുള്ളവർ: {unassignedStudents.length}
+                {t.camps.unassignedStudents}: {unassignedStudents.length}
               </div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-xs font-semibold text-slate-500 uppercase">ആകെ ലക്ഷ്യം</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase">{t.camps.totalTarget}</div>
               <div className="text-2xl font-bold text-indigo-700 mt-1">
                 {allCampsSummary.totalTarget}
               </div>
               <div className="text-xs text-indigo-500 mt-0.5">
-                ബാക്കി: {allCampsSummary.totalTargetRemaining}
+                {t.camps.remainingTarget}: {allCampsSummary.totalTargetRemaining}
               </div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-xs font-semibold text-slate-500 uppercase">കൊണ്ടുപോയത്</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase">{t.camps.calendarsTaken}</div>
               <div className="text-2xl font-bold text-blue-700 mt-1">
                 {allCampsSummary.totalTaken}
               </div>
-              <div className="text-xs text-blue-500 mt-0.5">കലണ്ടറുകൾ</div>
+              <div className="text-xs text-blue-500 mt-0.5">{language === 'en' ? 'Calendars' : 'കലണ്ടറുകൾ'}</div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-xs font-semibold text-slate-500 uppercase">വിറ്റത്</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase">{t.camps.calendarsSold}</div>
               <div className="text-2xl font-bold text-emerald-700 mt-1">
                 {allCampsSummary.totalSold}
               </div>
               <div className="text-xs text-emerald-600 font-medium mt-0.5">
-                {grandProgress}% പൂർത്തിയായി
+                {grandProgress}% {t.camps.progressCompleted}
               </div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-xs font-semibold text-slate-500 uppercase">ബാക്കി സ്റ്റോക്ക്</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase">{t.camps.stockRemaining}</div>
               <div className="text-2xl font-bold text-amber-700 mt-1">
                 {allCampsSummary.totalStock}
               </div>
-              <div className="text-xs text-amber-500 mt-0.5">കലണ്ടറുകൾ</div>
+              <div className="text-xs text-amber-500 mt-0.5">{language === 'en' ? 'Calendars' : 'കലണ്ടറുകൾ'}</div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 shadow-sm">
-              <div className="text-xs font-semibold text-emerald-800 uppercase">ആകെ ബാക്കി തുക</div>
+              <div className="text-xs font-semibold text-emerald-800 uppercase">{t.camps.netCash}</div>
               <div className="text-2xl font-bold text-emerald-900 mt-1">
                 {currency} {allCampsSummary.totalNetCash.toLocaleString('en-IN')}
               </div>
               <div className="text-xs text-emerald-700 mt-0.5">
-                ലഭിച്ചത്: {currency} {allCampsSummary.totalCash.toLocaleString('en-IN')}
+                {t.camps.cashReceived}: {currency} {allCampsSummary.totalCash.toLocaleString('en-IN')}
               </div>
             </div>
           </div>
@@ -524,9 +526,9 @@ export const CampsPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span>ക്യാമ്പുകളുടെ താരതമ്യം</span>
+                <span>{t.camps.campComparison}</span>
                 <span className="text-xs font-normal text-slate-500">
-                  (ഓരോ ക്യാമ്പിന്റെയും പ്രകടനം താഴെ കാണാം)
+                  {t.camps.campComparisonSub}
                 </span>
               </h2>
             </div>
@@ -543,7 +545,7 @@ export const CampsPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <h3 className="text-xl font-bold text-slate-900">{camp.name}</h3>
                           <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                            {camp.studentCount} കുട്ടികൾ
+                            {camp.studentCount} {t.camps.studentsCount}
                           </span>
                         </div>
                         {camp.location && (
@@ -555,7 +557,7 @@ export const CampsPage: React.FC = () => {
                         {camp.leaderName && (
                           <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
                             <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-                            <span>ഇൻചാർജ്: {camp.leaderName}</span>
+                            <span>{t.camps.leaderInCharge}: {camp.leaderName}</span>
                           </div>
                         )}
                       </div>
@@ -564,7 +566,7 @@ export const CampsPage: React.FC = () => {
                         onClick={() => setActiveTab(camp.id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
                       >
-                        <span>കണക്കുകൾ കാണുക</span>
+                        <span>{t.camps.viewDetails}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -575,9 +577,9 @@ export const CampsPage: React.FC = () => {
                     {/* Progress Bar */}
                     <div>
                       <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
-                        <span>ലക്ഷ്യം: {camp.totals.totalTarget}</span>
+                        <span>{t.camps.targetCol}: {camp.totals.totalTarget}</span>
                         <span className="font-bold text-emerald-700">
-                          {camp.totals.totalSold} വിറ്റു ({camp.totals.progressPercentage}%)
+                          {camp.totals.totalSold} {t.camps.soldCol} ({camp.totals.progressPercentage}%)
                         </span>
                       </div>
                       <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
@@ -590,19 +592,19 @@ export const CampsPage: React.FC = () => {
 
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
                       <div className="bg-slate-50 p-2.5 rounded-lg">
-                        <div className="text-[11px] font-semibold text-slate-500 uppercase">കൊണ്ടുപോയത്</div>
+                        <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.takenCol}</div>
                         <div className="text-base font-bold text-slate-800 mt-0.5">
                           {camp.totals.totalTaken}
                         </div>
                       </div>
                       <div className="bg-slate-50 p-2.5 rounded-lg">
-                        <div className="text-[11px] font-semibold text-slate-500 uppercase">വിറ്റത്</div>
+                        <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.soldCol}</div>
                         <div className="text-base font-bold text-emerald-700 mt-0.5">
                           {camp.totals.totalSold}
                         </div>
                       </div>
                       <div className="bg-slate-50 p-2.5 rounded-lg">
-                        <div className="text-[11px] font-semibold text-slate-500 uppercase">ബാക്കി സ്റ്റോക്ക്</div>
+                        <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.stockCol}</div>
                         <div className="text-base font-bold text-amber-600 mt-0.5">
                           {camp.totals.totalRemainingStock}
                         </div>
@@ -611,19 +613,19 @@ export const CampsPage: React.FC = () => {
 
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="bg-slate-50 p-2.5 rounded-lg">
-                        <div className="text-[11px] font-semibold text-slate-500 uppercase">ലഭിച്ച തുക</div>
+                        <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.cashCol}</div>
                         <div className="text-sm font-bold text-slate-800 mt-0.5">
                           {currency} {camp.totals.totalCashReceived.toLocaleString('en-IN')}
                         </div>
                       </div>
                       <div className="bg-slate-50 p-2.5 rounded-lg">
-                        <div className="text-[11px] font-semibold text-slate-500 uppercase">ചിലവ്</div>
+                        <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.expensesCol}</div>
                         <div className="text-sm font-bold text-rose-600 mt-0.5">
                           {currency} {camp.totals.totalExpenses.toLocaleString('en-IN')}
                         </div>
                       </div>
                       <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
-                        <div className="text-[11px] font-semibold text-emerald-800 uppercase">ആകെ തുക</div>
+                        <div className="text-[11px] font-semibold text-emerald-800 uppercase">{t.camps.netCashCol}</div>
                         <div className="text-sm font-bold text-emerald-700 mt-0.5">
                           {currency} {camp.totals.totalNetCash.toLocaleString('en-IN')}
                         </div>
@@ -632,13 +634,13 @@ export const CampsPage: React.FC = () => {
                   </div>
 
                   <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                    <span>ശരാശരി: {currency} {camp.totals.weightedAverage} / കലണ്ടർ</span>
+                    <span>{t.camps.averageCol}: {currency} {camp.totals.weightedAverage} / {language === 'en' ? 'Calendar' : 'കലണ്ടർ'}</span>
                     <button
                       onClick={() => handleExcelExport(camp.id, camp.name)}
                       className="text-emerald-700 hover:text-emerald-800 font-medium inline-flex items-center gap-1"
                     >
                       <FileDown className="w-3.5 h-3.5" />
-                      <span>Excel ഡൗൺലോഡ്</span>
+                      <span>{language === 'en' ? 'Download Excel' : 'Excel ഡൗൺലോഡ്'}</span>
                     </button>
                   </div>
                 </div>
@@ -669,11 +671,11 @@ export const CampsPage: React.FC = () => {
                       {activeCamp.leaderName && (
                         <span className="flex items-center gap-1">
                           <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-                          <span>ഇൻചാർജ്: {activeCamp.leaderName}</span>
+                          <span>{t.camps.leaderInCharge}: {activeCamp.leaderName}</span>
                         </span>
                       )}
                       <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">
-                        {activeCamp.studentCount} കുട്ടികൾ
+                        {activeCamp.studentCount} {t.camps.studentsCount}
                       </span>
                     </div>
                   </div>
@@ -697,7 +699,7 @@ export const CampsPage: React.FC = () => {
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
                     >
                       <Users className="w-4 h-4" />
-                      <span>+ നിലവിലുള്ള കുട്ടിയെ ചേർക്കുക</span>
+                      <span>{t.camps.addExistingStudentBtn}</span>
                     </button>
 
                     <button
@@ -711,16 +713,16 @@ export const CampsPage: React.FC = () => {
                       className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
                     >
                       <UserPlus className="w-4 h-4" />
-                      <span>+ പുതിയ കുട്ടിയെ രജിസ്റ്റർ ചെയ്യുക</span>
+                      <span>{t.camps.registerNewStudentBtn}</span>
                     </button>
 
                     <button
                       onClick={handleOpenEditCamp}
                       className="inline-flex items-center gap-1 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold shadow-sm transition-colors"
-                      title="ക്യാമ്പ് എഡിറ്റ് ചെയ്യുക"
+                      title={t.camps.editCampBtn}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
-                      <span>എഡിറ്റ്</span>
+                      <span>{t.camps.editCampBtn}</span>
                     </button>
                   </>
                 )}
@@ -729,17 +731,17 @@ export const CampsPage: React.FC = () => {
                   <button
                     onClick={() => setDeletingCamp(activeCamp)}
                     className="inline-flex items-center gap-1 px-3 py-2 bg-white hover:bg-rose-50 border border-rose-300 text-rose-700 rounded-lg text-xs font-semibold shadow-sm transition-colors"
-                    title="ക്യാമ്പ് റദ്ദാക്കുക"
+                    title={t.camps.deleteCampBtn}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>ഡിലീറ്റ്</span>
+                    <span>{t.camps.deleteCampBtn}</span>
                   </button>
                 )}
 
                 <button
                   onClick={() => handleExcelExport(activeCamp.id, activeCamp.name)}
                   className="inline-flex items-center gap-1 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold shadow-sm transition-colors"
-                  title="Excel ഡൗൺലോഡ്"
+                  title="Excel"
                 >
                   <FileDown className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Excel</span>
@@ -751,64 +753,64 @@ export const CampsPage: React.FC = () => {
           {/* Camp KPI Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase">ആകെ ലക്ഷ്യം</div>
+              <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.totalTarget}</div>
               <div className="text-xl font-bold text-indigo-700 mt-1">
                 {activeCamp.totals.totalTarget}
               </div>
               <div className="text-[11px] text-slate-400 mt-0.5">
-                ബാക്കി: {activeCamp.totals.totalTargetRemaining}
+                {t.camps.remainingTarget}: {activeCamp.totals.totalTargetRemaining}
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase">കൊണ്ടുപോയത്</div>
+              <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.calendarsTaken}</div>
               <div className="text-xl font-bold text-blue-700 mt-1">
                 {activeCamp.totals.totalTaken}
               </div>
-              <div className="text-[11px] text-blue-400 mt-0.5">കലണ്ടറുകൾ</div>
+              <div className="text-[11px] text-blue-400 mt-0.5">{language === 'en' ? 'Calendars' : 'കലണ്ടറുകൾ'}</div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase">വിറ്റത്</div>
+              <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.calendarsSold}</div>
               <div className="text-xl font-bold text-emerald-700 mt-1">
                 {activeCamp.totals.totalSold}
               </div>
               <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">
-                {activeCamp.totals.progressPercentage}% പൂർത്തിയായി
+                {activeCamp.totals.progressPercentage}% {t.camps.progressCompleted}
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase">ബാക്കി സ്റ്റോക്ക്</div>
+              <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.stockRemaining}</div>
               <div className="text-xl font-bold text-amber-700 mt-1">
                 {activeCamp.totals.totalRemainingStock}
               </div>
-              <div className="text-[11px] text-amber-500 mt-0.5">കലണ്ടറുകൾ</div>
+              <div className="text-[11px] text-amber-500 mt-0.5">{language === 'en' ? 'Calendars' : 'കലണ്ടറുകൾ'}</div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase">ലഭിച്ച കാശ്</div>
+              <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.cashReceived}</div>
               <div className="text-xl font-bold text-slate-800 mt-1">
                 {currency} {activeCamp.totals.totalCashReceived.toLocaleString('en-IN')}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">ആകെ പിരിവ്</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">{t.camps.totalCollection}</div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase">ചിലവ്</div>
+              <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.expenses}</div>
               <div className="text-xl font-bold text-rose-600 mt-1">
                 {currency} {activeCamp.totals.totalExpenses.toLocaleString('en-IN')}
               </div>
-              <div className="text-[11px] text-rose-400 mt-0.5">ആകെ ചിലവ്</div>
+              <div className="text-[11px] text-rose-400 mt-0.5">{t.camps.totalExpenseSub}</div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/50 shadow-sm text-center col-span-2 md:col-span-1">
-              <div className="text-[11px] font-semibold text-emerald-800 uppercase">ആകെ തുക</div>
+              <div className="text-[11px] font-semibold text-emerald-800 uppercase">{t.camps.netCash}</div>
               <div className="text-xl font-bold text-emerald-800 mt-1">
                 {currency} {activeCamp.totals.totalNetCash.toLocaleString('en-IN')}
               </div>
               <div className="text-[11px] text-emerald-600 mt-0.5">
-                ശരാശരി: {currency} {activeCamp.totals.weightedAverage}
+                {t.camps.averageCol}: {currency} {activeCamp.totals.weightedAverage}
               </div>
             </div>
           </div>
@@ -819,10 +821,10 @@ export const CampsPage: React.FC = () => {
             <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3 print:hidden">
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-slate-900">
-                  {activeCamp.name} - കുട്ടികളുടെ പട്ടിക & റാങ്കിംഗ്
+                  {activeCamp.name} - {t.camps.campStudentListTitle}
                 </h3>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
-                  {filteredStudents.length} കുട്ടികൾ
+                  {filteredStudents.length} {t.camps.studentsCount}
                 </span>
               </div>
 
@@ -832,7 +834,7 @@ export const CampsPage: React.FC = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="പേരോ കോഡോ നൽകി തിരയുക..."
+                  placeholder={t.camps.searchStudentPlaceholder}
                   className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -843,19 +845,19 @@ export const CampsPage: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-2 text-center w-12 sticky left-0 bg-slate-50 z-20">റാങ്ക്</th>
-                    <th className="py-3 px-3 min-w-[170px] sticky left-12 bg-slate-50 z-20 border-r border-slate-200 shadow-xs">വിദ്യാർത്ഥിയുടെ പേര്</th>
-                    <th className="py-3 px-3 text-right">ലക്ഷ്യം</th>
-                    <th className="py-3 px-3 text-right">ബാക്കി ലക്ഷ്യം</th>
-                    <th className="py-3 px-3 text-right">കൊണ്ടുപോയത്</th>
-                    <th className="py-3 px-3 text-right">വിറ്റത്</th>
-                    <th className="py-3 px-3 text-right">ബാക്കി സ്റ്റോക്ക്</th>
-                    <th className="py-3 px-3 text-right">ലഭിച്ച തുക</th>
-                    <th className="py-3 px-3 text-right">ചിലവ്</th>
-                    <th className="py-3 px-3 text-right font-black text-emerald-800">ആകെ തുക</th>
-                    <th className="py-3 px-3 text-right">ശരാശരി</th>
-                    <th className="py-3 px-3 text-center">പുരോഗതി</th>
-                    <th className="py-3 px-3 text-center print:hidden w-16">നടപടി</th>
+                    <th className="py-3 px-2 text-center w-12 sticky left-0 bg-slate-50 z-20">{t.camps.rankCol}</th>
+                    <th className="py-3 px-3 min-w-[170px] sticky left-12 bg-slate-50 z-20 border-r border-slate-200 shadow-xs">{t.camps.studentNameCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.targetCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.targetRemCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.takenCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.soldCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.stockCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.cashCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.expensesCol}</th>
+                    <th className="py-3 px-3 text-right font-black text-emerald-800">{t.camps.netCashCol}</th>
+                    <th className="py-3 px-3 text-right">{t.camps.averageCol}</th>
+                    <th className="py-3 px-3 text-center">{t.camps.progressCol}</th>
+                    <th className="py-3 px-3 text-center print:hidden w-16">{t.camps.actionCol}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -863,8 +865,8 @@ export const CampsPage: React.FC = () => {
                     <tr>
                       <td colSpan={13} className="py-10 text-center text-slate-400">
                         {searchQuery
-                          ? 'തിരഞ്ഞ പേരിൽ കുട്ടികളെ കണ്ടെത്തിയില്ല.'
-                          : 'ഈ ക്യാമ്പിൽ ഇതുവരെ കുട്ടികളെ ചേർത്തിട്ടില്ല. മുകളിലെ ബട്ടൺ ഉപയോഗിച്ച് ചേർക്കാവുന്നതാണ്.'}
+                          ? t.camps.noStudentsFoundSearch
+                          : t.camps.noStudentsInCamp}
                       </td>
                     </tr>
                   ) : (
@@ -954,7 +956,7 @@ export const CampsPage: React.FC = () => {
                                   handleRemoveStudent(student.studentId, student.studentName)
                                 }
                                 className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                                title="ക്യാമ്പിൽ നിന്ന് ഒഴിവാക്കുക"
+                                title={t.camps.removeFromCampTooltip}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -971,7 +973,7 @@ export const CampsPage: React.FC = () => {
                   <tfoot>
                     <tr className="bg-emerald-950 text-white font-bold border-t-2 border-emerald-900 text-[11px]">
                       <td colSpan={2} className="py-3 px-4 uppercase tracking-wider text-left sticky left-0 bg-emerald-950 z-10 border-r border-emerald-900 shadow-xs">
-                        ആകെ തുക (TOTAL):
+                        {t.camps.totalRow}
                       </td>
                       <td className="py-3 px-3 text-right">{activeCamp.totals.totalTarget}</td>
                       <td className="py-3 px-3 text-right text-amber-300">
@@ -1016,7 +1018,7 @@ export const CampsPage: React.FC = () => {
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Tent className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-slate-900">പുതിയ ക്യാമ്പ് ചേർക്കുക</h3>
+                <h3 className="text-base font-bold text-slate-900">{t.camps.createNewCampTitle}</h3>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -1035,52 +1037,52 @@ export const CampsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  ക്യാമ്പിന്റെ പേര് <span className="text-rose-500">*</span>
+                  {t.camps.campNameLabel} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={campName}
                   onChange={(e) => setCampName(e.target.value)}
-                  placeholder="ഉദാ: കൊല്ലം, തൃശൂർ, ആലപ്പുഴ"
+                  placeholder={t.camps.campNamePlaceholder}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  സ്ഥലം / ജില്ല
+                  {t.camps.locationLabel}
                 </label>
                 <input
                   type="text"
                   value={campLocation}
                   onChange={(e) => setCampLocation(e.target.value)}
-                  placeholder="ഉദാ: ആലപ്പുഴ ജില്ല"
+                  placeholder={t.camps.locationPlaceholder}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  ക്യാമ്പ് ലീഡർ / ഇൻചാർജ് പേര്
+                  {t.camps.leaderLabel}
                 </label>
                 <input
                   type="text"
                   value={campLeader}
                   onChange={(e) => setCampLeader(e.target.value)}
-                  placeholder="ഉദാ: അൻവർ സാഹിബ്"
+                  placeholder={t.camps.leaderPlaceholder}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  കുറിപ്പുകൾ
+                  {t.camps.notesLabel}
                 </label>
                 <textarea
                   value={campNotes}
                   onChange={(e) => setCampNotes(e.target.value)}
-                  placeholder="ക്യാമ്പിനെക്കുറിച്ചുള്ള കൂടുതൽ വിവരങ്ങൾ..."
+                  placeholder={t.camps.notesPlaceholder}
                   rows={2}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -1092,14 +1094,14 @@ export const CampsPage: React.FC = () => {
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'സേവ് ചെയ്യുന്നു...' : 'ക്യാമ്പ് ഉണ്ടാക്കുക'}
+                  {isSubmitting ? t.camps.saving : t.camps.saveCampBtn}
                 </button>
               </div>
             </form>
@@ -1114,7 +1116,7 @@ export const CampsPage: React.FC = () => {
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-slate-900">ക്യാമ്പ് എഡിറ്റ് ചെയ്യുക</h3>
+                <h3 className="text-base font-bold text-slate-900">{t.camps.editCampTitle}</h3>
               </div>
               <button
                 onClick={() => setShowEditModal(false)}
@@ -1133,7 +1135,7 @@ export const CampsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  ക്യാമ്പിന്റെ പേര് <span className="text-rose-500">*</span>
+                  {t.camps.campNameLabel} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1146,7 +1148,7 @@ export const CampsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  സ്ഥലം / ജില്ല
+                  {t.camps.locationLabel}
                 </label>
                 <input
                   type="text"
@@ -1158,7 +1160,7 @@ export const CampsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  ക്യാമ്പ് ലീഡർ / ഇൻചാർജ് പേര്
+                  {t.camps.leaderLabel}
                 </label>
                 <input
                   type="text"
@@ -1170,7 +1172,7 @@ export const CampsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  കുറിപ്പുകൾ
+                  {t.camps.notesLabel}
                 </label>
                 <textarea
                   value={campNotes}
@@ -1186,14 +1188,14 @@ export const CampsPage: React.FC = () => {
                   onClick={() => setShowEditModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'അപ്ഡേറ്റ് ചെയ്യുന്നു...' : 'മാറ്റങ്ങൾ സൂക്ഷിക്കുക'}
+                  {isSubmitting ? t.camps.updating : t.camps.updateCampBtn}
                 </button>
               </div>
             </form>
@@ -1209,7 +1211,7 @@ export const CampsPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-emerald-600" />
                 <h3 className="text-base font-bold text-slate-900">
-                  {activeCamp.name} - നിലവിലുള്ള കുട്ടിയെ ചേർക്കുക
+                  {activeCamp.name} - {t.camps.addExistingModalTitle}
                 </h3>
               </div>
               <button
@@ -1228,14 +1230,12 @@ export const CampsPage: React.FC = () => {
               )}
 
               <p className="text-xs text-slate-500">
-                താഴെ കൊടുത്തിരിക്കുന്ന ലിസ്റ്റിൽ നിന്ന് ക്യാമ്പിലേക്ക് ആവശ്യമുള്ള കുട്ടിയെ
-                തിരഞ്ഞെടുക്കുക. കുട്ടിയെ ചേർത്ത ഉടൻ അവരുടെ മുൻപുള്ള എല്ലാ ദിവസങ്ങളിലെയും കണക്കുകൾ ഈ
-                ക്യാമ്പിലേക്ക് ഓട്ടോമാറ്റിക്കായി ആഡ് ആവുന്നതാണ്.
+                {t.camps.addExistingModalDesc}
               </p>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  കുട്ടിയെ തിരയുക / തിരഞ്ഞെടുക്കുക
+                  {t.camps.searchStudentLabel}
                 </label>
                 <div className="relative mb-2">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1243,7 +1243,7 @@ export const CampsPage: React.FC = () => {
                     type="text"
                     value={studentSearchFilter}
                     onChange={(e) => setStudentSearchFilter(e.target.value)}
-                    placeholder="പേരോ കോഡോ ടൈപ്പ് ചെയ്യുക..."
+                    placeholder={t.camps.searchStudentPlaceholder}
                     className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
@@ -1251,7 +1251,7 @@ export const CampsPage: React.FC = () => {
                 <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
                   {filteredUnassigned.length === 0 ? (
                     <div className="p-4 text-center text-xs text-slate-400">
-                      മറ്റ് ക്യാമ്പുകളിൽ പെടാത്ത പുതിയ കുട്ടികളൊന്നും അവശേഷിക്കുന്നില്ല.
+                      {t.camps.noAvailableStudents}
                     </div>
                   ) : (
                     filteredUnassigned.map((st) => (
@@ -1275,17 +1275,17 @@ export const CampsPage: React.FC = () => {
                               {st.studentName}
                             </div>
                             <div className="text-[11px] font-mono text-slate-500">
-                              കോഡ്: {st.studentCode}
+                              {t.camps.codeLabel} {st.studentCode}
                             </div>
                           </div>
                         </div>
 
                         <div className="text-right text-[11px]">
                           <div className="font-semibold text-emerald-700">
-                            വിറ്റത്: {st.calendarsSold}
+                            {t.camps.soldCol}: {st.calendarsSold}
                           </div>
                           <div className="text-slate-500">
-                            തുക: {currency} {st.netCash}
+                            {t.camps.cashCol}: {currency} {st.netCash}
                           </div>
                         </div>
                       </label>
@@ -1300,14 +1300,14 @@ export const CampsPage: React.FC = () => {
                   onClick={() => setShowAddStudentModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={!selectedStudentId || isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'ചേർക്കുന്നു...' : 'ക്യാമ്പിലേക്ക് ചേർക്കുക'}
+                  {isSubmitting ? t.camps.assigning : t.camps.assignBtn}
                 </button>
               </div>
             </form>
@@ -1323,7 +1323,7 @@ export const CampsPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-indigo-600" />
                 <h3 className="text-base font-bold text-slate-900">
-                  {activeCamp.name} - പുതിയ കുട്ടിയെ ചേർക്കുക
+                  {activeCamp.name} - {t.camps.registerNewModalTitle}
                 </h3>
               </div>
               <button
@@ -1342,41 +1342,40 @@ export const CampsPage: React.FC = () => {
               )}
 
               <p className="text-xs text-slate-500">
-                പുതിയ കുട്ടിയെ രജിസ്റ്റർ ചെയ്യുമ്പോൾ ഈ ക്യാമ്പിലും പ്രധാന ക്യാമ്പയിൻ ലിസ്റ്റിലും
-                ഒരേസമയം ലഭ്യമാകും.
+                {t.camps.registerNewModalDesc}
               </p>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  വിദ്യാർത്ഥിയുടെ കോഡ് <span className="text-rose-500">*</span>
+                  {t.camps.studentCodeLabel} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={newStudentCode}
                   onChange={(e) => setNewStudentCode(e.target.value)}
-                  placeholder="ഉദാ: STU-101"
+                  placeholder={t.camps.studentCodePlaceholder}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  വിദ്യാർത്ഥിയുടെ പേര് <span className="text-rose-500">*</span>
+                  {t.camps.studentNameLabel} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
-                  placeholder="പൂർണ്ണ നാമം"
+                  placeholder={t.camps.studentNamePlaceholder}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  കലണ്ടർ ലക്ഷ്യം (Target)
+                  {t.camps.targetLabel}
                 </label>
                 <input
                   type="number"
@@ -1393,14 +1392,14 @@ export const CampsPage: React.FC = () => {
                   onClick={() => setShowNewStudentModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'രജിസ്റ്റർ ചെയ്യുന്നു...' : 'രജിസ്റ്റർ ചെയ്യുക'}
+                  {isSubmitting ? t.camps.registering : t.camps.registerBtn}
                 </button>
               </div>
             </form>
@@ -1417,15 +1416,10 @@ export const CampsPage: React.FC = () => {
             </div>
 
             <h3 className="text-center text-lg font-bold text-slate-900 mb-2">
-              ക്യാമ്പ് റദ്ദാക്കണോ?
+              {t.camps.deleteCampModalTitle}
             </h3>
             <p className="text-center text-xs text-slate-600 mb-6 leading-relaxed">
-              <strong className="text-slate-900">"{deletingCamp.name}"</strong> എന്ന ക്യാമ്പ്
-              ഒഴിവാക്കിയാൽ ഇതിലുള്ള കുട്ടികൾ ക്യാമ്പിൽ നിന്നും ഒഴിവാകും. എന്നാൽ{' '}
-              <strong className="text-emerald-700">
-                അവരുടെ വിൽപന വിവരങ്ങളോ രജിസ്ട്രേഷനോ ഇല്ലാതാകില്ല
-              </strong>
-              , അവർ പൊതു പട്ടികയിൽ തുടരുന്നതാണ്.
+              {t.camps.deleteCampModalDesc.replace('{campName}', deletingCamp.name)}
             </p>
 
             <div className="flex items-center justify-center gap-3">
@@ -1434,7 +1428,7 @@ export const CampsPage: React.FC = () => {
                 onClick={() => setDeletingCamp(null)}
                 className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                വേണ്ട, നിലനിർത്തുക
+                {t.camps.keepCampBtn}
               </button>
               <button
                 type="button"
@@ -1442,7 +1436,7 @@ export const CampsPage: React.FC = () => {
                 onClick={handleDeleteCamp}
                 className="px-5 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? 'ഒഴിവാക്കുന്നു...' : 'അതെ, ഒഴിവാക്കുക'}
+                {isSubmitting ? t.camps.deleting : t.camps.confirmDeleteBtn}
               </button>
             </div>
           </div>

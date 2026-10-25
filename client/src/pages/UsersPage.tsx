@@ -81,11 +81,11 @@ export const UsersPage: React.FC = () => {
       setNewUsername('');
       setNewPassword('');
       setNewRole('OPERATOR');
-      setSuccessMessage('പുതിയ ഉപയോക്താവിനെ വിജയകരമായി ചേർത്തു!');
+      setSuccessMessage(language === 'en' ? 'New user added successfully!' : 'പുതിയ ഉപയോക്താവിനെ വിജയകരമായി ചേർത്തു!');
       setTimeout(() => setSuccessMessage(null), 4000);
       fetchUsers();
     } catch (err: any) {
-      setAddError(err.message || 'ഉപയോക്താവിനെ ചേർക്കാൻ സാധിച്ചില്ല');
+      setAddError(err.message || (language === 'en' ? 'Failed to add user' : 'ഉപയോക്താവിനെ ചേർക്കാൻ സാധിച്ചില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -113,11 +113,11 @@ export const UsersPage: React.FC = () => {
         isActive: editIsActive,
       });
       setEditingUser(null);
-      setSuccessMessage('ഉപയോക്താവിന്റെ വിവരങ്ങൾ വിജയകരമായി മാറ്റി!');
+      setSuccessMessage(language === 'en' ? 'User updated successfully!' : 'ഉപയോക്താവിന്റെ വിവരങ്ങൾ വിജയകരമായി മാറ്റി!');
       setTimeout(() => setSuccessMessage(null), 4000);
       fetchUsers();
     } catch (err: any) {
-      setEditError(err.message || 'അപ്ഡേറ്റ് ചെയ്യാൻ സാധിച്ചില്ല');
+      setEditError(err.message || (language === 'en' ? 'Failed to update user' : 'അപ്ഡേറ്റ് ചെയ്യാൻ സാധിച്ചില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -138,12 +138,12 @@ export const UsersPage: React.FC = () => {
     if (!passwordUser) return;
 
     if (passwordValue.length < 6) {
-      setPasswordError('പാസ്‌വേഡ് കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം');
+      setPasswordError(language === 'en' ? 'Password must be at least 6 characters' : 'പാസ്‌വേഡ് കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം');
       return;
     }
 
     if (passwordValue !== confirmPassword) {
-      setPasswordError('നൽകിയ രണ്ട് പാസ്‌വേഡുകളും ഒരേപോലെയല്ല');
+      setPasswordError(language === 'en' ? 'Passwords do not match' : 'നൽകിയ രണ്ട് പാസ്‌വേഡുകളും ഒരേപോലെയല്ല');
       return;
     }
 
@@ -154,10 +154,10 @@ export const UsersPage: React.FC = () => {
         newPassword: passwordValue,
       });
       setPasswordUser(null);
-      setSuccessMessage(res.message || 'പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!');
+      setSuccessMessage(res.message || (language === 'en' ? 'Password updated successfully!' : 'പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!'));
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
-      setPasswordError(err.message || 'പാസ്‌വേഡ് മാറ്റാൻ സാധിച്ചില്ല');
+      setPasswordError(err.message || (language === 'en' ? 'Failed to update password' : 'പാസ്‌വേഡ് മാറ്റാൻ സാധിച്ചില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -232,13 +232,13 @@ export const UsersPage: React.FC = () => {
               {isLoading ? (
                 <tr>
                   <td colSpan={5} className="py-10 text-center text-slate-500">
-                    ലോഡ് ചെയ്യുന്നു...
+                    {language === 'en' ? 'Loading users...' : 'ലോഡ് ചെയ്യുന്നു...'}
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-10 text-center text-slate-400">
-                    ഉപയോക്താക്കളൊന്നും കണ്ടെത്തിയില്ല.
+                    {language === 'en' ? 'No users found.' : 'ഉപയോക്താക്കളൊന്നും കണ്ടെത്തിയില്ല.'}
                   </td>
                 </tr>
               ) : (
@@ -251,7 +251,7 @@ export const UsersPage: React.FC = () => {
                           <span>{u.name}</span>
                           {isCurrent && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold border border-slate-200">
-                              (നിങ്ങൾ)
+                              {language === 'en' ? '(You)' : '(നിങ്ങൾ)'}
                             </span>
                           )}
                         </div>
@@ -294,20 +294,20 @@ export const UsersPage: React.FC = () => {
                           <button
                             onClick={() => handleOpenChangePassword(u)}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold transition-colors shadow-2xs"
-                            title="പാസ്‌വേഡ് മാറ്റുക"
+                            title={language === 'en' ? 'Change Password' : 'പാസ്‌വേഡ് മാറ്റുക'}
                           >
                             <KeyRound className="w-3.5 h-3.5 text-amber-600" />
-                            <span>പാസ്‌വേഡ് മാറ്റുക</span>
+                            <span>{language === 'en' ? 'Password' : 'പാസ്‌വേഡ് മാറ്റുക'}</span>
                           </button>
 
                           {/* Edit Details Button */}
                           <button
                             onClick={() => handleOpenEdit(u)}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition-colors shadow-2xs"
-                            title="വിവരങ്ങൾ തിരുത്തുക"
+                            title={language === 'en' ? 'Edit Details' : 'വിവരങ്ങൾ തിരുത്തുക'}
                           >
                             <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                            <span>എഡിറ്റ്</span>
+                            <span>{t.common.edit}</span>
                           </button>
 
                           {/* Status toggle */}
@@ -320,7 +320,7 @@ export const UsersPage: React.FC = () => {
                                   : 'text-emerald-600 hover:text-emerald-800'
                               }`}
                             >
-                              {u.isActive ? 'നിഷ്ക്രിയമാക്കുക' : 'സജീവമാക്കുക'}
+                              {u.isActive ? (language === 'en' ? 'Deactivate' : 'നിഷ്ക്രിയമാക്കുക') : (language === 'en' ? 'Activate' : 'സജീവമാക്കുക')}
                             </button>
                           )}
                         </div>
@@ -344,7 +344,9 @@ export const UsersPage: React.FC = () => {
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">പാസ്‌വേഡ് മാറ്റുക</h3>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {language === 'en' ? 'Change User Password' : 'പാസ്‌വേഡ് മാറ്റുക'}
+                  </h3>
                   <p className="text-xs text-slate-500">
                     {passwordUser.name} ({passwordUser.username})
                   </p>
@@ -366,13 +368,14 @@ export const UsersPage: React.FC = () => {
               )}
 
               <p className="text-xs text-slate-500">
-                അഡ്മിൻ എന്ന നിലയിൽ നിങ്ങൾക്ക് ഈ ഉപയോക്താവിന് പഴയ പാസ്‌വേഡ് അറിയാതെ തന്നെ പുതിയ
-                പാസ്‌വേഡ് നേരിട്ട് നൽകാവുന്നതാണ്.
+                {language === 'en'
+                  ? 'As an administrator, you can directly set a new password for this user without knowing their old password.'
+                  : 'അഡ്മിൻ എന്ന നിലയിൽ നിങ്ങൾക്ക് ഈ ഉപയോക്താവിന് പഴയ പാസ്‌വേഡ് അറിയാതെ തന്നെ പുതിയ പാസ്‌വേഡ് നേരിട്ട് നൽകാവുന്നതാണ്.'}
               </p>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  പുതിയ പാസ്‌വേഡ് <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'New Password' : 'പുതിയ പാസ്‌വേഡ്'} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -380,7 +383,7 @@ export const UsersPage: React.FC = () => {
                     required
                     value={passwordValue}
                     onChange={(e) => setPasswordValue(e.target.value)}
-                    placeholder="കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ"
+                    placeholder={language === 'en' ? 'Minimum 6 characters' : 'കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ'}
                     className="w-full px-3 py-2 pr-10 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -395,14 +398,14 @@ export const UsersPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  പാസ്‌വേഡ് ആവർത്തിക്കുക <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'Confirm Password' : 'പാസ്‌വേഡ് ആവർത്തിക്കുക'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="മുകളിൽ നൽകിയ അതേ പാസ്‌വേഡ്"
+                  placeholder={language === 'en' ? 'Re-enter same password' : 'മുകളിൽ നൽകിയ അതേ പാസ്‌വേഡ്'}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -413,14 +416,14 @@ export const UsersPage: React.FC = () => {
                   onClick={() => setPasswordUser(null)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'മാറ്റുന്നു...' : 'പാസ്‌വേഡ് സേവ് ചെയ്യുക'}
+                  {isSubmitting ? (language === 'en' ? 'Updating...' : 'മാറ്റുന്നു...') : (language === 'en' ? 'Save Password' : 'പാസ്‌വേഡ് സേവ് ചെയ്യുക')}
                 </button>
               </div>
             </form>
@@ -438,7 +441,9 @@ export const UsersPage: React.FC = () => {
                   <Edit2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">ഉപയോക്താവിനെ എഡിറ്റ് ചെയ്യുക</h3>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {language === 'en' ? 'Edit User Details' : 'ഉപയോക്താവിനെ എഡിറ്റ് ചെയ്യുക'}
+                  </h3>
                   <p className="text-xs font-mono text-slate-500">{editingUser.username}</p>
                 </div>
               </div>
@@ -459,7 +464,7 @@ export const UsersPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  പൂർണ്ണ നാമം <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'Full Name' : 'പൂർണ്ണ നാമം'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -472,7 +477,7 @@ export const UsersPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  റോൾ (Security Role)
+                  {language === 'en' ? 'Security Role' : 'റോൾ (Security Role)'}
                 </label>
                 <select
                   value={editRole}
@@ -487,15 +492,15 @@ export const UsersPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  അക്കൗണ്ട് സ്റ്റാറ്റസ്
+                  {language === 'en' ? 'Account Status' : 'അക്കൗണ്ട് സ്റ്റാറ്റസ്'}
                 </label>
                 <select
                   value={editIsActive ? 'active' : 'inactive'}
                   onChange={(e) => setEditIsActive(e.target.value === 'active')}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                 >
-                  <option value="active">സജീവം (Active)</option>
-                  <option value="inactive">നിഷ്ക്രിയം (Inactive)</option>
+                  <option value="active">{language === 'en' ? 'Active' : 'സജീവം (Active)'}</option>
+                  <option value="inactive">{language === 'en' ? 'Inactive' : 'നിഷ്ക്രിയം (Inactive)'}</option>
                 </select>
               </div>
 
@@ -505,14 +510,14 @@ export const UsersPage: React.FC = () => {
                   onClick={() => setEditingUser(null)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'സേവ് ചെയ്യുന്നു...' : 'മാറ്റങ്ങൾ സൂക്ഷിക്കുക'}
+                  {isSubmitting ? (language === 'en' ? 'Saving...' : 'സേവ് ചെയ്യുന്നു...') : (language === 'en' ? 'Save Changes' : 'മാറ്റങ്ങൾ സൂക്ഷിക്കുക')}
                 </button>
               </div>
             </form>
@@ -529,7 +534,9 @@ export const UsersPage: React.FC = () => {
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
                   <UserPlus className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">പുതിയ ഉപയോക്താവിനെ ചേർക്കുക</h3>
+                <h3 className="text-base font-bold text-slate-900">
+                  {language === 'en' ? 'Add New User' : 'പുതിയ ഉപയോക്താവിനെ ചേർക്കുക'}
+                </h3>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -548,49 +555,49 @@ export const UsersPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  പൂർണ്ണ നാമം <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'Full Name' : 'പൂർണ്ണ നാമം'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="ഉദാ: രാഹുൽ കെ"
+                  placeholder={language === 'en' ? 'e.g. Rahul K' : 'ഉദാ: രാഹുൽ കെ'}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  യൂസർനെയിം <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'Username' : 'യൂസർനെയിം'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder="ഉദാ: rahul2026"
+                  placeholder={language === 'en' ? 'e.g. rahul2026' : 'ഉദാ: rahul2026'}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  പാസ്‌വേഡ് <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'Password' : 'പാസ്‌വേഡ്'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="password"
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ"
+                  placeholder={language === 'en' ? 'Minimum 6 characters' : 'കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ'}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  റോൾ (Security Role)
+                  {language === 'en' ? 'Security Role' : 'റോൾ (Security Role)'}
                 </label>
                 <select
                   value={newRole}
@@ -609,14 +616,14 @@ export const UsersPage: React.FC = () => {
                   onClick={() => setShowAddModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'ചേർക്കുന്നു...' : 'ചേർക്കുക'}
+                  {isSubmitting ? (language === 'en' ? 'Adding...' : 'ചേർക്കുന്നു...') : (language === 'en' ? 'Add User' : 'ചേർക്കുക')}
                 </button>
               </div>
             </form>

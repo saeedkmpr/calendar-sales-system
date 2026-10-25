@@ -64,11 +64,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      setPasswordError('പുതിയ പാസ്‌വേഡ് കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം');
+      setPasswordError(language === 'en' ? 'New password must be at least 6 characters' : 'പുതിയ പാസ്‌വേഡ് കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം');
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('നൽകിയ രണ്ട് പുതിയ പാസ്‌വേഡുകളും ഒരേപോലെയല്ല');
+      setPasswordError(language === 'en' ? 'New passwords do not match' : 'നൽകിയ രണ്ട് പുതിയ പാസ്‌വേഡുകളും ഒരേപോലെയല്ല');
       return;
     }
 
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
         currentPassword,
         newPassword,
       });
-      setPasswordSuccess('പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!');
+      setPasswordSuccess(language === 'en' ? 'Password changed successfully!' : 'പാസ്‌വേഡ് വിജയകരമായി മാറ്റി!');
       setTimeout(() => {
         setShowPasswordModal(false);
         setCurrentPassword('');
@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
         setPasswordSuccess(null);
       }, 2000);
     } catch (err: any) {
-      setPasswordError(err.message || 'പാസ്‌വേഡ് മാറ്റാൻ കഴിഞ്ഞില്ല');
+      setPasswordError(err.message || (language === 'en' ? 'Failed to change password' : 'പാസ്‌വേഡ് മാറ്റാൻ കഴിഞ്ഞില്ല'));
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
           <button
             onClick={onToggleMobileMenu}
             className="md:hidden p-2 rounded-lg text-slate-700 hover:text-emerald-700 hover:bg-slate-100 transition-colors -ml-1 shrink-0"
-            title="മെനു തുറക്കുക"
+            title={language === 'en' ? 'Open Menu' : 'മെനു തുറക്കുക'}
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -173,7 +173,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                   setPasswordSuccess(null);
                   setShowPasswordModal(true);
                 }}
-                title="എന്റെ പാസ്‌വേഡ് മാറ്റുക (Change Password)"
+                title={language === 'en' ? 'Change My Password' : 'എന്റെ പാസ്‌വേഡ് മാറ്റുക (Change Password)'}
                 className="p-2 text-slate-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
               >
                 <KeyRound className="w-4 h-4" />
@@ -202,7 +202,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">എന്റെ പാസ്‌വേഡ് മാറ്റുക</h3>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {language === 'en' ? 'Change My Password' : 'എന്റെ പാസ്‌വേഡ് മാറ്റുക'}
+                  </h3>
                   <p className="text-xs text-slate-500">{user?.name} ({user?.username})</p>
                 </div>
               </div>
@@ -229,21 +231,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  നിലവിലെ പാസ്‌വേഡ് <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'Current Password' : 'നിലവിലെ പാസ്‌വേഡ്'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type={showPasswordText ? 'text' : 'password'}
                   required
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="നിങ്ങളുടെ നിലവിലെ പാസ്‌വേഡ്"
+                  placeholder={language === 'en' ? 'Your current password' : 'നിങ്ങളുടെ നിലവിലെ പാസ്‌വേഡ്'}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  പുതിയ പാസ്‌വേഡ് <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'New Password' : 'പുതിയ പാസ്‌വേഡ്'} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -251,7 +253,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ"
+                    placeholder={language === 'en' ? 'Minimum 6 characters' : 'കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ'}
                     className="w-full px-3 py-2 pr-10 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -266,14 +268,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  പുതിയ പാസ്‌വേഡ് ആവർത്തിക്കുക <span className="text-rose-500">*</span>
+                  {language === 'en' ? 'Confirm New Password' : 'പുതിയ പാസ്‌വേഡ് ആവർത്തിക്കുക'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type={showPasswordText ? 'text' : 'password'}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="മുകളിൽ നൽകിയ അതേ പുതിയ പാസ്‌വേഡ്"
+                  placeholder={language === 'en' ? 'Re-enter your new password' : 'മുകളിൽ നൽകിയ അതേ പുതിയ പാസ്‌വേഡ്'}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -284,14 +286,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileMenu }) => {
                   onClick={() => setShowPasswordModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  റദ്ദാക്കുക
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'മാറ്റുന്നു...' : 'പാസ്‌വേഡ് മാറ്റുക'}
+                  {isSubmitting ? (language === 'en' ? 'Updating...' : 'മാറ്റുന്നു...') : (language === 'en' ? 'Update Password' : 'പാസ്‌വേഡ് മാറ്റുക')}
                 </button>
               </div>
             </form>
