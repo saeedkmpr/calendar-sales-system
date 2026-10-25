@@ -1,0 +1,138 @@
+// Prisma Schema for Calendar Sales Management System
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(uuid())
+  name          String
+  username      String      @unique
+  email         String?     @unique
+  passwordHash  String
+  role          String      @default("OPERATOR") // ADMIN, OPERATOR, VIEWER
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  auditLogs     AuditLog[]
+  dailySales    DailySale[]
+
+  @@map("users")
+}
+
+model Campaign {
+  id              String             @id @default(uuid())
+  name            String
+  institutionName String?
+  startDate       DateTime
+  endDate         DateTime
+  durationDays    Int                @default(7)
+  calendarPrice   Float              @default(100.0)
+  currency        String             @default("₹")
+  description     String?
+  status          String             @default("ACTIVE") // ACTIVE, COMPLETED, ARCHIVED
+  createdBy       String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  campaignStudents CampaignStudent[]
+  dailySales       DailySale[]
+  auditLogs        AuditLog[]
+  camps            Camp[]
+
+  @@map("campaigns")
+}
+
+model Student {
+  id          String             @id @default(uuid())
+  studentCode String             @unique
+  name        String             // Malayalam name
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  campaignStudents CampaignStudent[]
+  dailySales       DailySale[]
+
+  @@map("students")
+}
+
+model Camp {
+  id              String             @id @default(uuid())
+  campaignId      String
+  name            String             // e.g. "ആലപ്പുഴ", "കണ്ണൂർ"
+  location        String?
+  leaderName      String?            // Camp In-charge / Leader
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  campaign         Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignStudents CampaignStudent[]
+
+  @@unique([campaignId, name])
+  @@map("camps")
+}
+
+model CampaignStudent {
+  id             String    @id @default(uuid())
+  campaignId     String
+  studentId      String
+  campId         String?
+  targetCalendars Int      @default(50)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  camp           Camp?     @relation(fields: [campId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, studentId])
+  @@map("campaign_students")
+}
+
+model DailySale {
+  id             String    @id @default(uuid())
+  campaignId     String
+  studentId      String
+  dayNumber      Int       // 1 to 7
+  calendarsTaken Int       @default(0)
+  calendarsSold  Int       @default(0)
+  cashReceived   Float     @default(0.0)
+  expenses       Float     @default(0.0)
+  notes          String?
+  enteredBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user           User?     @relation(fields: [enteredBy], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, studentId, dayNumber])
+  @@map("daily_sales")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?
+  userName    String?
+  campaignId  String?
+  action      String    // CREATE, UPDATE, DELETE, IMPORT, EXPORT, LOGIN
+  entityType  String    // CAMPAIGN, STUDENT, DAILY_SALE, USER, TARGET
+  entityId    String?
+  oldValues   String?   // JSON string
+  newValues   String?   // JSON string
+  createdAt   DateTime  @default(now())
+
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}

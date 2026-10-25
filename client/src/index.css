@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom scrollbar for tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print optimization: Guarantees 100% crisp, vector, non-blank PDF via Chrome "Save as PDF" */
+@media print {
+  @page {
+    size: landscape;
+    margin: 8mm;
+  }
+
+  /* Hide sidebar, navigation, search boxes, and action buttons during print / PDF export */
+  aside,
+  header,
+  nav,
+  .no-print,
+  button,
+  input,
+  .search-container {
+    display: none !important;
+  }
+
+  /* Force pure white background and full width */
+  body, #root, main, div[class*="min-h-screen"], div[class*="flex-1"] {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+  }
+
+  /* Clean up tables for paper / PDF export */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 10.5px !important;
+    margin-bottom: 12px !important;
+  }
+
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 4px 6px !important;
+    text-align: center !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  th {
+    background-color: #065f46 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+  }
+
+  .total-row {
+    background-color: #f1f5f9 !important;
+    font-weight: 700 !important;
+    border-top: 2px solid #0f766e !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+}

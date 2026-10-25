@@ -1,0 +1,118 @@
+// Prisma Schema for PostgreSQL (Production / Supabase)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(uuid())
+  name          String
+  username      String      @unique
+  email         String?     @unique
+  passwordHash  String      @map("password_hash")
+  role          String      @default("OPERATOR") // ADMIN, OPERATOR, VIEWER
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  auditLogs     AuditLog[]
+  dailySales    DailySale[]
+
+  @@map("users")
+}
+
+model Campaign {
+  id              String             @id @default(uuid())
+  name            String
+  institutionName String?            @map("institution_name")
+  startDate       DateTime           @map("start_date")
+  endDate         DateTime           @map("end_date")
+  durationDays    Int                @default(7) @map("duration_days")
+  calendarPrice   Float              @default(100.0) @map("calendar_price")
+  currency        String             @default("₹")
+  description     String?
+  status          String             @default("ACTIVE") // ACTIVE, COMPLETED, ARCHIVED
+  createdBy       String?            @map("created_by")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  campaignStudents CampaignStudent[]
+  dailySales       DailySale[]
+  auditLogs        AuditLog[]
+
+  @@map("campaigns")
+}
+
+model Student {
+  id          String             @id @default(uuid())
+  studentCode String             @unique @map("student_code")
+  name        String             // Malayalam name
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  campaignStudents CampaignStudent[]
+  dailySales       DailySale[]
+
+  @@map("students")
+}
+
+model CampaignStudent {
+  id             String    @id @default(uuid())
+  campaignId     String    @map("campaign_id")
+  studentId      String    @map("student_id")
+  targetCalendars Int      @default(50) @map("target_calendars")
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, studentId])
+  @@map("campaign_students")
+}
+
+model DailySale {
+  id             String    @id @default(uuid())
+  campaignId     String    @map("campaign_id")
+  studentId      String    @map("student_id")
+  dayNumber      Int       @map("day_number") // 1 to 7
+  calendarsTaken Int       @default(0) @map("calendars_taken")
+  calendarsSold  Int       @default(0) @map("calendars_sold")
+  cashReceived   Float     @default(0.0) @map("cash_received")
+  expenses       Float     @default(0.0) @map("expenses")
+  notes          String?
+  enteredBy      String?   @map("entered_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user           User?     @relation(fields: [enteredBy], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, studentId, dayNumber])
+  @@map("daily_sales")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?   @map("user_id")
+  userName    String?   @map("user_name")
+  campaignId  String?   @map("campaign_id")
+  action      String    // CREATE, UPDATE, DELETE, IMPORT, EXPORT, LOGIN
+  entityType  String    @map("entity_type") // CAMPAIGN, STUDENT, DAILY_SALE, USER, TARGET
+  entityId    String?   @map("entity_id")
+  oldValues   String?   @map("old_values")
+  newValues   String?   @map("new_values")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
