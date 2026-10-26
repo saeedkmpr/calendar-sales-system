@@ -561,3 +561,111 @@ reportsRouter.get(
     }
   }
 );
+
+// GET /api/reports/campaigns/:campaignId/camps/:campId/print
+reportsRouter.get(
+  '/campaigns/:campaignId/camps/:campId/print',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const campId = req.params.campId as string;
+      const camp = await prisma.camp.findUnique({
+        where: { id: campId },
+        include: { campaign: true },
+      });
+
+      if (!camp) {
+        res.status(404).send('Camp not found');
+        return;
+      }
+
+      const csList = await prisma.campaignStudent.findMany({
+        where: { campId, isActive: true },
+        include: { student: true },
+      });
+
+      const studentIds = csList.map((cs) => cs.studentId);
+      const sales = await prisma.dailySale.findMany({
+        where: { campaignId: camp.campaignId, studentId: { in: studentIds } },
+      });
+
+      const salesMap: { [studentId: string]: { taken: number; sold: number; cash: number; exp: number } } = {};
+      studentIds.forEach((id) => { salesMap[id] = { taken: 0, sold: 0, cash: 0, exp: 0 }; });
+      sales.forEach((s) => {
+        if (salesMap[s.studentId]) {
+          salesMap[s.studentId].taken += s.calendarsTaken;
+          salesMap[s.studentId].sold += s.calendarsSold;
+          salesMap[s.studentId].cash += s.cashReceived;
+          salesMap[s.studentId].exp += s.expenses;
+        }
+      });
+
+      const studentRows = csList.map((cs) => {
+        const s = salesMap[cs.studentId] || { taken: 0, sold: 0, cash: 0, exp: 0 };
+        const netCash = Math.round((s.cash - s.exp) * 100) / 100;
+        const remainingStock = s.taken - s.sold;
+        const target = cs.targetCalendars || 0;
+        const targetRemaining = Math.max(0, target - s.sold);
+        const average = s.sold > 0 ? Math.round((netCash / s.sold) * 100) / 100 : 0;
+        const progress = target > 0 ? Math.min(100, Math.round((s.sold / target) * 100)) : 0;
+
+        return {
+          studentId: cs.studentId,
+          studentCode: cs.student.studentCode,
+          studentName: cs.student.name,
+          target,
+          targetRemaining,
+          calendarsTaken: s.taken,
+          calendarsSold: s.sold,
+          remainingStock,
+          cashReceived: s.cash,
+          expenses: s.exp,
+          netCash,
+          average,
+          progressPercentage: progress,
+        };
+      });
+
+      studentRows.sort((a, b) => b.netCash - a.netCash || b.calendarsSold - a.calendarsSold);
+      const rankedStudents = studentRows.map((r, idx) => ({ rank: idx + 1, ...r }));
+
+      let totalTarget = 0;
+      let totalTargetRemaining = 0;
+      let totalTaken = 0;
+      let totalSold = 0;
+      let totalStock = 0;
+      let totalCash = 0;
+      let totalExp = 0;
+      let totalNet = 0;
+
+      rankedStudents.forEach((s) => {
+        totalTarget += s.target;
+        totalTargetRemaining += s.targetRemaining;
+        totalTaken += s.calendarsTaken;
+        totalSold += s.calendarsSold;
+        totalStock += s.remainingStock;
+        totalCash += s.cashReceived;
+        totalExp += s.expenses;
+        totalNet += s.netCash;
+      });
+
+      const totals = {
+        totalTarget,
+        totalTargetRemaining,
+        totalTaken,
+        totalSold,
+        totalRemainingStock: totalStock,
+        totalCashReceived: totalCash,
+        totalExpenses: totalExp,
+        totalNetCash: totalNet,
+        weightedAverage: totalSold > 0 ? Math.round((totalNet / totalSold) * 100) / 100 : 0,
+        progressPercentage: totalTarget > 0 ? Math.min(100, Math.round((totalSold / totalTarget) * 100)) : 0,
+      };
+
+      const html = PdfService.generateCampPrintHtml(camp.campaign, camp, rankedStudents, totals);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error) {
+      res.status(500).send('Print failed');
+    }
+  }
+);

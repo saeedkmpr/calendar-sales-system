@@ -14,7 +14,8 @@ import {
 import { useCampaign } from '../context/CampaignContext';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
-import { downloadPdfFromHtml, printFromHtml } from '../services/pdfExporter';
+import { downloadPdfFromHtml } from '../services/pdfExporter';
+import { ReportModal } from '../components/ReportModal';
 
 export const LeaderboardPage: React.FC = () => {
   const { currentCampaign } = useCampaign();
@@ -25,6 +26,7 @@ export const LeaderboardPage: React.FC = () => {
   const [totals, setTotals] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
+  const [showReportModal, setShowReportModal] = useState<boolean>(false);
 
   const fetchLeaderboard = async () => {
     if (!currentCampaign) return;
@@ -56,16 +58,21 @@ export const LeaderboardPage: React.FC = () => {
     }
   };
 
-  const handlePdfDownload = () => {
+  const handlePdfDownload = async () => {
     if (!currentCampaign) return;
-    // Native browser print dialog triggers Chrome's vector Skia PDF generator ("Save as PDF")
-    // Completely eliminates blank-page bugs, preserved fonts, and unreadable canvases!
-    window.print();
+    try {
+      setIsExportingPdf(true);
+      const html = await api.getText(`/reports/campaigns/${currentCampaign.id}/leaderboard/print`);
+      await downloadPdfFromHtml(html, `${currentCampaign.name}_Leaderboard_Report.pdf`);
+    } catch (err: any) {
+      alert(err.message || 'PDF ഡൗൺലോഡ് പരാജയപ്പെട്ടു');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
-  const handlePrint = () => {
-    if (!currentCampaign) return;
-    api.openPrintWindow(`/reports/campaigns/${currentCampaign.id}/leaderboard/print`);
+  const handleOpenReportModal = () => {
+    setShowReportModal(true);
   };
 
   const filteredRows = rows.filter((r) => {
@@ -132,22 +139,23 @@ export const LeaderboardPage: React.FC = () => {
 
           <button
             onClick={handlePdfDownload}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
-            title={language === 'en' ? 'Open Chrome Print dialog to Save as PDF' : 'Print വിൻഡോ വഴി Save as PDF നൽകി സേവ് ചെയ്യുക'}
+            disabled={isExportingPdf}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer"
+            title={language === 'en' ? 'Download official Leaderboard PDF file' : 'ഔദ്യോഗിക റാങ്കിംഗ് PDF ഫയൽ ഡൗൺലോഡ് ചെയ്യുക'}
           >
-            <FileText className="w-4 h-4 text-rose-600" />
+            <FileDown className="w-4 h-4" />
             <span>
-              {language === 'en' ? 'Save as PDF' : '📄 Save as PDF'}
+              {isExportingPdf ? 'Saving...' : (language === 'en' ? 'Download PDF' : '📄 PDF ഡൗൺലോഡ്')}
             </span>
           </button>
 
           <button
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
-            title={language === 'en' ? 'Open printable page in new window' : 'പുതിയ വിൻഡോയിൽ പ്രിന്റ് ചെയ്യുക'}
+            onClick={handleOpenReportModal}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer"
+            title={language === 'en' ? 'View and print official report document' : 'ഔദ്യോഗിക രേഖ കാണുക / പ്രിന്റ് ചെയ്യുക'}
           >
-            <Printer className="w-4 h-4 text-slate-600" />
-            <span>{language === 'en' ? 'Print View' : '🖨️ പ്രിന്റ് വിൻഡോ'}</span>
+            <Printer className="w-4 h-4 text-emerald-400" />
+            <span>{language === 'en' ? 'View & Print' : '👁️ കാണുക / പ്രിന്റ്'}</span>
           </button>
         </div>
       </div>
@@ -422,6 +430,16 @@ export const LeaderboardPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {currentCampaign && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          title={`${currentCampaign.name} — ${language === 'en' ? 'Student Leaderboard Report' : 'വിദ്യാർത്ഥികളുടെ സമഗ്ര റാങ്കിംഗ്'}`}
+          endpoint={`/reports/campaigns/${currentCampaign.id}/leaderboard/print`}
+          filename={`${currentCampaign.name}_Leaderboard_Report.pdf`}
+        />
+      )}
     </div>
   );
 };

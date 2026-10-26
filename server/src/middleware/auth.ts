@@ -12,12 +12,16 @@ export function authenticateToken(
   res: Response,
   next: NextFunction
 ): void {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : null;
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  let token: string | null = null;
 
-  if (!token) {
+  if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query && typeof req.query.token === 'string' && req.query.token.trim()) {
+    token = req.query.token.trim();
+  }
+
+  if (!token || token === 'null' || token === 'undefined') {
     res.status(401).json({ error: 'ലോഗിൻ ചെയ്തിട്ടില്ല. ദയവായി ലോഗിൻ ചെയ്യുക (Unauthorized)' });
     return;
   }

@@ -47,6 +47,10 @@ export async function downloadPdfFromHtml(htmlContent: string, filename: string)
     </style>
   `;
 
+  const isPortrait = /size:\s*portrait/i.test(htmlContent);
+  const targetWidthPx = isPortrait ? 800 : 1120;
+  const orientation = (isPortrait ? 'portrait' : 'landscape') as 'portrait' | 'landscape';
+
   // Create render target at coordinates (0, 0) inside the viewport
   // Critical fix: must NOT be placed at left: -9999px because html2canvas ignores offscreen negative coordinates!
   const renderTarget = document.createElement('div');
@@ -54,7 +58,7 @@ export async function downloadPdfFromHtml(htmlContent: string, filename: string)
   renderTarget.style.position = 'fixed';
   renderTarget.style.top = '0';
   renderTarget.style.left = '0';
-  renderTarget.style.width = '1120px';
+  renderTarget.style.width = `${targetWidthPx}px`;
   renderTarget.style.minHeight = '600px';
   renderTarget.style.background = '#ffffff';
   renderTarget.style.color = '#1e293b';
@@ -72,7 +76,7 @@ export async function downloadPdfFromHtml(htmlContent: string, filename: string)
         font-family: 'Noto Sans Malayalam', 'Gayathri', sans-serif !important;
         background: #ffffff !important;
         color: #1e293b !important;
-        width: 1120px !important;
+        width: ${targetWidthPx}px !important;
       }
       #pdf-render-target table {
         width: 100% !important;
@@ -118,8 +122,8 @@ export async function downloadPdfFromHtml(htmlContent: string, filename: string)
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 1200,
-        width: 1120,
+        windowWidth: targetWidthPx + 40,
+        width: targetWidthPx,
         x: 0,
         y: 0,
         scrollX: 0,
@@ -128,7 +132,7 @@ export async function downloadPdfFromHtml(htmlContent: string, filename: string)
       jsPDF: {
         unit: 'mm',
         format: 'a4',
-        orientation: 'landscape' as const,
+        orientation,
       },
       pagebreak: { mode: ['css', 'legacy'] },
     };

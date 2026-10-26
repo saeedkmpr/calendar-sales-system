@@ -4,6 +4,7 @@ import prisma from '../prisma';
 import { authenticateToken, requireRole, AuthenticatedRequest } from '../middleware/auth';
 import { createAuditLog } from '../services/auditService';
 import { ExcelService } from '../services/excelService';
+import { PdfService } from '../services/pdfService';
 import {
   calculateDay1StudentRow,
   calculateDayStudentRow,
@@ -815,6 +816,75 @@ campsRouter.get(
 );
 
 /**
+ * GET /api/camps/:id/print
+ * Printable official camp report
+ */
+campsRouter.get(
+  '/camps/:id/print',
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const id = req.params.id as string;
+      const camp = await prisma.camp.findUnique({
+        where: { id },
+        include: { campaign: true },
+      });
+
+      if (!camp) {
+        res.status(404).send('Camp not found');
+        return;
+      }
+
+      const csList = await prisma.campaignStudent.findMany({
+        where: { campId: id, isActive: true },
+        include: { student: true },
+      });
+
+      const students = await getStudentMetricsForCampaign(camp.campaignId, csList);
+
+      let totalTarget = 0;
+      let totalTargetRemaining = 0;
+      let totalTaken = 0;
+      let totalSold = 0;
+      let totalStock = 0;
+      let totalCash = 0;
+      let totalExp = 0;
+      let totalNet = 0;
+
+      students.forEach((s) => {
+        totalTarget += s.target;
+        totalTargetRemaining += s.targetRemaining;
+        totalTaken += s.calendarsTaken;
+        totalSold += s.calendarsSold;
+        totalStock += s.remainingStock;
+        totalCash += s.cashReceived;
+        totalExp += s.expenses;
+        totalNet += s.netCash;
+      });
+
+      const totals = {
+        totalTarget,
+        totalTargetRemaining,
+        totalTaken,
+        totalSold,
+        totalRemainingStock: totalStock,
+        totalCashReceived: totalCash,
+        totalExpenses: totalExp,
+        totalNetCash: totalNet,
+        weightedAverage: totalSold > 0 ? Math.round((totalNet / totalSold) * 100) / 100 : 0,
+        progressPercentage: totalTarget > 0 ? Math.min(100, Math.round((totalSold / totalTarget) * 100)) : 0,
+      };
+
+      const html = PdfService.generateCampPrintHtml(camp.campaign, camp, students, totals);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error: any) {
+      res.status(500).send('Print failed');
+    }
+  }
+);
+
+/**
  * GET /api/campaigns/:campaignId/camps/unassigned/export/excel
  * Export unassigned students report to Excel
  */
@@ -907,6 +977,119 @@ campsRouter.get(
     } catch (error: any) {
       console.error('Unassigned excel export error:', error);
       res.status(500).json({ error: 'Excel export failed' });
+    }
+  }
+);
+
+/**
+ * GET /api/campaigns/:campaignId/camps/unassigned/print
+ * Printable official non-camp students report
+ */
+campsRouter.get(
+  '/campaigns/:campaignId/camps/unassigned/print',
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const campaignId = req.params.campaignId as string;
+      const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+      if (!campaign) {
+        res.status(404).send('Campaign not found');
+        return;
+      }
+
+      const allCamps = await prisma.camp.findMany({ where: { campaignId }, select: { id: true } });
+      const campIds = allCamps.map((c) => c.id);
+
+      const unassignedList = await prisma.campaignStudent.findMany({
+        where: {
+          campaignId,
+          isActive: true,
+          OR: [
+            { campId: null },
+            { campId: { notIn: campIds } },
+          ],
+        },
+        include: { student: true },
+        orderBy: { student: { studentCode: 'asc' } },
+      });
+
+      const students = await getStudentMetricsForCampaign(campaignId, unassignedList);
+
+      let totalTarget = 0;
+      let totalTargetRemaining = 0;
+      let totalTaken = 0;
+      let totalSold = 0;
+      let totalStock = 0;
+      let totalCash = 0;
+      let totalExp = 0;
+      let totalNet = 0;
+
+      students.forEach((s) => {
+        totalTarget += s.target;
+        totalTargetRemaining += s.targetRemaining;
+        totalTaken += s.calendarsTaken;
+        totalSold += s.calendarsSold;
+        totalStock += s.remainingStock;
+        totalCash += s.cashReceived;
+        totalExp += s.expenses;
+        totalNet += s.netCash;
+      });
+
+      const totals = {
+        totalTarget,
+        totalTargetRemaining,
+        totalTaken,
+        totalSold,
+        totalRemainingStock: totalStock,
+        totalCashReceived: totalCash,
+        totalExpenses: totalExp,
+        totalNetCash: totalNet,
+        weightedAverage: totalSold > 0 ? Math.round((totalNet / totalSold) * 100) / 100 : 0,
+        progressPercentage: totalTarget > 0 ? Math.min(100, Math.round((totalSold / totalTarget) * 100)) : 0,
+      };
+
+      const durationDays = Math.max(campaign.durationDays || 7, 7);
+      const unassignedStudentIds = unassignedList.map((cs) => cs.studentId);
+      const allSales = unassignedStudentIds.length > 0
+        ? await prisma.dailySale.findMany({ where: { campaignId, studentId: { in: unassignedStudentIds } } })
+        : [];
+
+      const daySalesMap: { [day: number]: { sold: number; stock: number; cash: number; expenses: number } } = {};
+      for (let d = 1; d <= durationDays; d++) daySalesMap[d] = { sold: 0, stock: 0, cash: 0, expenses: 0 };
+      allSales.forEach((s) => {
+        if (daySalesMap[s.dayNumber]) {
+          daySalesMap[s.dayNumber].sold += s.calendarsSold;
+          daySalesMap[s.dayNumber].stock += (s.calendarsTaken - s.calendarsSold);
+          daySalesMap[s.dayNumber].cash += s.cashReceived;
+          daySalesMap[s.dayNumber].expenses += s.expenses;
+        }
+      });
+
+      let runningCumulativeNet = 0;
+      const dailySummary = [];
+      for (let d = 1; d <= durationDays; d++) {
+        const item = daySalesMap[d];
+        const dayNet = item.cash - item.expenses;
+        runningCumulativeNet += dayNet;
+        dailySummary.push({
+          dayNumber: d,
+          dayLabel: `ദിവസം ${d}`,
+          calendarsSold: item.sold,
+          remainingStock: item.stock,
+          cashReceived: item.cash,
+          expenses: item.expenses,
+          dailyNetCash: dayNet,
+          cumulativeNetCash: runningCumulativeNet,
+          average: item.sold > 0 ? Math.round((dayNet / item.sold) * 100) / 100 : 0,
+        });
+      }
+
+      const html = PdfService.generateUnassignedPrintHtml(campaign, students, totals, dailySummary);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error: any) {
+      console.error('Unassigned print error:', error);
+      res.status(500).send('Print failed');
     }
   }
 );

@@ -12,7 +12,8 @@ import {
   Upload,
   FileText,
 } from 'lucide-react';
-import { downloadPdfFromHtml, printFromHtml } from '../services/pdfExporter';
+import { downloadPdfFromHtml } from '../services/pdfExporter';
+import { ReportModal } from '../components/ReportModal';
 import { useCampaign } from '../context/CampaignContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -59,6 +60,7 @@ export const DailySalesPage: React.FC = () => {
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const [importResultMsg, setImportResultMsg] = useState<string | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
+  const [showReportModal, setShowReportModal] = useState<boolean>(false);
 
   // Working state
   const [rows, setRows] = useState<(Day1Row | DailySalesRow)[]>([]);
@@ -236,15 +238,21 @@ export const DailySalesPage: React.FC = () => {
     }
   };
 
-  const handlePdfDownload = () => {
+  const handlePdfDownload = async () => {
     if (!currentCampaign) return;
-    // Native browser print dialog triggers Chrome's vector Skia PDF generator ("Save as PDF")
-    window.print();
+    try {
+      setIsExportingPdf(true);
+      const html = await api.getText(`/reports/campaigns/${currentCampaign.id}/days/${dayNumber}/print`);
+      await downloadPdfFromHtml(html, `${currentCampaign.name}_Day_${dayNumber}_Report.pdf`);
+    } catch (err: any) {
+      alert(err.message || 'PDF ഡൗൺലോഡ് പരാജയപ്പെട്ടു');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
-  const handlePrint = () => {
-    if (!currentCampaign) return;
-    api.openPrintWindow(`/reports/campaigns/${currentCampaign.id}/days/${dayNumber}/print`);
+  const handleOpenReportModal = () => {
+    setShowReportModal(true);
   };
 
   const handleImportDaySales = async () => {
@@ -387,22 +395,23 @@ export const DailySalesPage: React.FC = () => {
 
             <button
               onClick={handlePdfDownload}
-              className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
-              title={language === 'en' ? 'Open Chrome Print dialog to Save as PDF' : 'Print വിൻഡോ വഴി Save as PDF നൽകി സേവ് ചെയ്യുക'}
+              disabled={isExportingPdf}
+              className="flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer"
+              title={language === 'en' ? 'Download official Day PDF report' : 'ഔദ്യോഗിക PDF ഫയൽ ഡൗൺലോഡ് ചെയ്യുക'}
             >
-              <FileText className="w-4 h-4 text-rose-600" />
+              <FileDown className="w-4 h-4" />
               <span className="hidden sm:inline">
-                {language === 'en' ? 'Save as PDF' : '📄 Save as PDF'}
+                {isExportingPdf ? 'Saving...' : (language === 'en' ? 'Download PDF' : '📄 PDF ഡൗൺലോഡ്')}
               </span>
             </button>
 
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
-              title={language === 'en' ? 'Open standalone printable page' : 'പുതിയ വിൻഡോയിൽ പ്രിന്റ് ചെയ്യുക'}
+              onClick={handleOpenReportModal}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer"
+              title={language === 'en' ? 'View and print official report document' : 'ഔദ്യോഗിക രേഖ കാണുക / പ്രിന്റ് ചെയ്യുക'}
             >
-              <Printer className="w-4 h-4 text-slate-600" />
-              <span className="hidden sm:inline">{language === 'en' ? 'Print View' : '🖨️ പ്രിന്റ് വിൻഡോ'}</span>
+              <Printer className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">{language === 'en' ? 'View & Print' : '👁️ കാണുക / പ്രിന്റ്'}</span>
             </button>
 
             {isAdmin && (
@@ -616,6 +625,16 @@ export const DailySalesPage: React.FC = () => {
             </span>
           </button>
         </div>
+      )}
+
+      {currentCampaign && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          title={`${currentCampaign.name} — ${language === 'en' ? `Day ${dayNumber} Sales & Ranking Report` : `ദിവസം ${dayNumber} വിൽപ്പന & റാങ്കിംഗ് റിപ്പോർട്ട്`}`}
+          endpoint={`/reports/campaigns/${currentCampaign.id}/days/${dayNumber}/print`}
+          filename={`${currentCampaign.name}_Day_${dayNumber}_Report.pdf`}
+        />
       )}
     </div>
   );

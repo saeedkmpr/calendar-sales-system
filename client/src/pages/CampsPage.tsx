@@ -30,6 +30,8 @@ import { useCampaign } from '../context/CampaignContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
+import { downloadPdfFromHtml } from '../services/pdfExporter';
+import { ReportModal } from '../components/ReportModal';
 
 interface CampTotals {
   totalTarget: number;
@@ -100,6 +102,13 @@ export const CampsPage: React.FC = () => {
   const [deletingCamp, setDeletingCamp] = useState<CampData | null>(null);
   const [assigningStudent, setAssigningStudent] = useState<CampStudent | null>(null);
   const [targetCampId, setTargetCampId] = useState<string>('');
+  const [activeReportModal, setActiveReportModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    endpoint: string;
+    filename: string;
+  } | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
 
   // Form states
   const [campName, setCampName] = useState<string>('');
@@ -386,6 +395,52 @@ export const CampsPage: React.FC = () => {
 
   const handleNativePrint = () => {
     window.print();
+  };
+
+  const handleCampPdfDownload = async (campId: string, campNameStr: string) => {
+    if (!currentCampaign) return;
+    try {
+      setIsExportingPdf(true);
+      const html = await api.getText(`/reports/campaigns/${currentCampaign.id}/camps/${campId}/print`);
+      await downloadPdfFromHtml(html, `${currentCampaign.name}_${campNameStr}_Camp_Report.pdf`);
+    } catch (err: any) {
+      alert(err.message || 'PDF ഡൗൺലോഡ് പരാജയപ്പെട്ടു');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const handleCampReportView = (campId: string, campNameStr: string) => {
+    if (!currentCampaign) return;
+    setActiveReportModal({
+      isOpen: true,
+      title: `${currentCampaign.name} — ${campNameStr} ക്യാമ്പ് റിപ്പോർട്ട്`,
+      endpoint: `/reports/campaigns/${currentCampaign.id}/camps/${campId}/print`,
+      filename: `${currentCampaign.name}_${campNameStr}_Camp_Report.pdf`,
+    });
+  };
+
+  const handleUnassignedPdfDownload = async () => {
+    if (!currentCampaign) return;
+    try {
+      setIsExportingPdf(true);
+      const html = await api.getText(`/reports/campaigns/${currentCampaign.id}/camps/unassigned/print`);
+      await downloadPdfFromHtml(html, `${currentCampaign.name}_Non_Camp_Students_Report.pdf`);
+    } catch (err: any) {
+      alert(err.message || 'PDF ഡൗൺലോഡ് പരാജയപ്പെട്ടു');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const handleUnassignedReportView = () => {
+    if (!currentCampaign) return;
+    setActiveReportModal({
+      isOpen: true,
+      title: `${currentCampaign.name} — ക്യാമ്പിൽ ഇല്ലാത്ത കുട്ടികളുടെ റിപ്പോർട്ട്`,
+      endpoint: `/reports/campaigns/${currentCampaign.id}/camps/unassigned/print`,
+      filename: `${currentCampaign.name}_Non_Camp_Students_Report.pdf`,
+    });
   };
 
   // Filter students in active camp
@@ -751,18 +806,28 @@ export const CampsPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 print:hidden">
                 <button
                   onClick={handleUnassignedExcelExport}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold shadow-sm transition-colors"
                   title="Excel"
                 >
-                  <FileDown className="w-4 h-4" />
+                  <FileDown className="w-4 h-4 text-emerald-600" />
                   <span>{t.camps.exportUnassignedExcel || 'Excel ഡൗൺലോഡ്'}</span>
                 </button>
                 <button
-                  onClick={handleNativePrint}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium shadow-sm transition-colors"
+                  onClick={handleUnassignedPdfDownload}
+                  disabled={isExportingPdf}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  title="PDF"
                 >
-                  <Printer className="w-4 h-4 text-slate-500" />
-                  <span>{t.camps.printPdfBtn}</span>
+                  <FileDown className="w-4 h-4" />
+                  <span>{isExportingPdf ? 'Saving...' : 'PDF ഡൗൺലോഡ്'}</span>
+                </button>
+                <button
+                  onClick={handleUnassignedReportView}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  title="Print"
+                >
+                  <Printer className="w-4 h-4 text-emerald-400" />
+                  <span>കാണുക / പ്രിന്റ്</span>
                 </button>
               </div>
             </div>
@@ -1494,6 +1559,25 @@ export const CampsPage: React.FC = () => {
                 >
                   <FileDown className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Excel</span>
+                </button>
+
+                <button
+                  onClick={() => handleCampPdfDownload(activeCamp.id, activeCamp.name)}
+                  disabled={isExportingPdf}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  title="PDF"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span>{isExportingPdf ? 'Saving...' : 'PDF ഡൗൺലോഡ്'}</span>
+                </button>
+
+                <button
+                  onClick={() => handleCampReportView(activeCamp.id, activeCamp.name)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  title="Print"
+                >
+                  <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>കാണുക / പ്രിന്റ്</span>
                 </button>
               </div>
             </div>
@@ -2275,6 +2359,16 @@ export const CampsPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {activeReportModal && activeReportModal.isOpen && (
+        <ReportModal
+          isOpen={activeReportModal.isOpen}
+          onClose={() => setActiveReportModal(null)}
+          title={activeReportModal.title}
+          endpoint={activeReportModal.endpoint}
+          filename={activeReportModal.filename}
+        />
       )}
     </div>
   );

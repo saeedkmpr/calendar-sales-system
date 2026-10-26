@@ -540,4 +540,382 @@ export class PdfService {
 </body>
 </html>`;
   }
+
+  /**
+   * Generates a printable HTML document for an individual Team Camp (e.g. Alappuzha, Kannur)
+   */
+  static generateCampPrintHtml(
+    campaign: any,
+    camp: any,
+    students: any[],
+    totals: any
+  ): string {
+    const tableRows = students.map((s) => `<tr>
+      <td style="font-weight: 700;">#${s.rank}</td>
+      <td>${s.studentCode}</td>
+      <td style="text-align: left; font-weight: 600;">${s.studentName}</td>
+      <td>${s.target}</td>
+      <td>${s.targetRemaining}</td>
+      <td>${s.calendarsTaken}</td>
+      <td>${s.calendarsSold}</td>
+      <td>${s.remainingStock}</td>
+      <td>₹${s.cashReceived}</td>
+      <td>₹${s.expenses}</td>
+      <td style="font-weight: 700; color: #047857;">₹${s.netCash}</td>
+      <td>₹${s.average}</td>
+      <td>${s.progressPercentage}%</td>
+    </tr>`).join('');
+
+    return `<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="utf-8" />
+  <title>${campaign.name} — ${camp.name} ക്യാമ്പ് റിപ്പോർട്ട്</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: landscape; margin: 10mm; }
+    body {
+      font-family: 'Noto Sans Malayalam', sans-serif;
+      margin: 0;
+      padding: 10px;
+      color: #1e293b;
+      background: #fff;
+      font-size: 10.5px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #0f766e;
+      padding-bottom: 6px;
+    }
+    .header h1 { margin: 0; font-size: 20px; color: #0f766e; }
+    .header p { margin: 3px 0 0 0; color: #64748b; font-size: 12px; }
+    .camp-info-bar {
+      display: flex;
+      justify-content: space-between;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      padding: 8px 14px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .kpi-grid {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .kpi-card {
+      flex: 1;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      padding: 8px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .kpi-card .lbl { font-size: 10px; color: #64748b; margin-bottom: 2px; }
+    .kpi-card .val { font-size: 14px; font-weight: 700; color: #0f766e; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 5px 6px;
+      text-align: center;
+    }
+    th {
+      background: #065f46;
+      color: white;
+      font-weight: 600;
+      font-size: 10px;
+    }
+    .total-row {
+      background: #f1f5f9;
+      font-weight: 700;
+      border-top: 2px solid #0f766e;
+    }
+    .sign-row {
+      margin-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 30px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+    }
+    @media print {
+      .no-print { display: none; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${campaign.name}</h1>
+    ${campaign.institutionName ? `<p>${campaign.institutionName}</p>` : ''}
+    <p><strong>${camp.name} ടീം ക്യാമ്പ് — ഔദ്യോഗിക റിപ്പോർട്ട് (Official Camp Report)</strong></p>
+  </div>
+
+  <div class="camp-info-bar">
+    <span>🏕️ ക്യാമ്പ്: <strong>${camp.name}</strong></span>
+    ${camp.location ? `<span>📍 സ്ഥലം: <strong>${camp.location}</strong></span>` : ''}
+    ${camp.leaderName ? `<span>👤 ഇൻചാർജ്: <strong>${camp.leaderName}</strong></span>` : ''}
+    <span>👥 ആകെ കുട്ടികൾ: <strong>${students.length}</strong></span>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="lbl">ലക്ഷ്യം (Target)</div>
+      <div class="val">${totals.totalTarget}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="lbl">കൊണ്ടുപോയത്</div>
+      <div class="val">${totals.totalTaken}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="lbl">വിറ്റ കലണ്ടർ</div>
+      <div class="val">${totals.totalSold}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="lbl">ബാക്കി സ്റ്റോക്ക്</div>
+      <div class="val">${totals.totalRemainingStock}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="lbl">ലഭിച്ച തുക</div>
+      <div class="val">₹${totals.totalCashReceived}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="lbl">ചിലവ്</div>
+      <div class="val">₹${totals.totalExpenses}</div>
+    </div>
+    <div class="kpi-card" style="background: #ecfdf5; border-color: #a7f3d0;">
+      <div class="lbl" style="color: #065f46; font-weight: 700;">ആകെ തുക (Net Cash)</div>
+      <div class="val" style="color: #047857;">₹${totals.totalNetCash}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>റാങ്ക്</th>
+        <th>കോഡ്</th>
+        <th>വിദ്യാർത്ഥിയുടെ പേര്</th>
+        <th>ലക്ഷ്യം</th>
+        <th>ബാക്കി ലക്ഷ്യം</th>
+        <th>കൊണ്ടുപോയത്</th>
+        <th>വിറ്റത്</th>
+        <th>സ്റ്റോക്ക്</th>
+        <th>ലഭിച്ച തുക</th>
+        <th>ചിലവ്</th>
+        <th>ആകെ തുക</th>
+        <th>ശരാശരി</th>
+        <th>പുരോഗതി</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+      <tr class="total-row">
+        <td colspan="3">ആകെ തുക (SUM)</td>
+        <td>${totals.totalTarget}</td>
+        <td>${totals.totalTargetRemaining}</td>
+        <td>${totals.totalTaken}</td>
+        <td>${totals.totalSold}</td>
+        <td>${totals.totalRemainingStock}</td>
+        <td>₹${totals.totalCashReceived}</td>
+        <td>₹${totals.totalExpenses}</td>
+        <td>₹${totals.totalNetCash}</td>
+        <td>₹${totals.weightedAverage}</td>
+        <td>${totals.progressPercentage || 0}%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sign-row">
+    <div>തയ്യാറാക്കിയത്: .......................................</div>
+    <div>ക്യാമ്പ് ലീഡർ ഒപ്പ്: .......................................</div>
+    <div>ജനറൽ കൺവീനർ: .......................................</div>
+  </div>
+</body>
+</html>`;
+  }
+
+  /**
+   * Generates a printable HTML document for Non-Camp Students (ക്യാമ്പിൽ ഇല്ലാത്തവർ)
+   */
+  static generateUnassignedPrintHtml(
+    campaign: any,
+    students: any[],
+    totals: any,
+    dailySummary: any[]
+  ): string {
+    const summaryRows = dailySummary.map((d) => `<tr>
+      <td style="font-weight: 700;">${d.dayLabel}</td>
+      <td>${d.calendarsSold}</td>
+      <td>${d.remainingStock}</td>
+      <td>₹${d.cashReceived}</td>
+      <td>₹${d.expenses}</td>
+      <td style="font-weight: 700; color: #047857;">₹${d.dailyNetCash}</td>
+      <td style="font-weight: 700; color: #0f766e;">₹${d.cumulativeNetCash}</td>
+      <td>₹${d.average}</td>
+    </tr>`).join('');
+
+    const studentRows = students.map((s) => `<tr>
+      <td style="font-weight: 700;">#${s.rank}</td>
+      <td>${s.studentCode}</td>
+      <td style="text-align: left; font-weight: 600;">${s.studentName}</td>
+      <td>${s.target}</td>
+      <td>${s.targetRemaining}</td>
+      <td>${s.calendarsTaken}</td>
+      <td>${s.calendarsSold}</td>
+      <td>${s.remainingStock}</td>
+      <td>₹${s.cashReceived}</td>
+      <td>₹${s.expenses}</td>
+      <td style="font-weight: 700; color: #047857;">₹${s.netCash}</td>
+      <td>₹${s.average}</td>
+      <td>${s.progressPercentage}%</td>
+    </tr>`).join('');
+
+    return `<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="utf-8" />
+  <title>${campaign.name} — ക്യാമ്പിൽ ഇല്ലാത്ത വിദ്യാർത്ഥികളുടെ റിപ്പോർട്ട്</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: landscape; margin: 10mm; }
+    body {
+      font-family: 'Noto Sans Malayalam', sans-serif;
+      margin: 0;
+      padding: 10px;
+      color: #1e293b;
+      background: #fff;
+      font-size: 10.5px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #b45309;
+      padding-bottom: 6px;
+    }
+    .header h1 { margin: 0; font-size: 20px; color: #b45309; }
+    .header p { margin: 3px 0 0 0; color: #64748b; font-size: 12px; }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin: 14px 0 6px 0;
+      color: #1e293b;
+      padding: 3px 6px;
+      background: #fef3c7;
+      border-left: 4px solid #b45309;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 4px 6px;
+      text-align: center;
+    }
+    th {
+      background: #78350f;
+      color: white;
+      font-weight: 600;
+    }
+    .total-row {
+      background: #fef3c7;
+      font-weight: 700;
+    }
+    .page-break { page-break-before: always; }
+    @media print {
+      .no-print { display: none; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${campaign.name}</h1>
+    ${campaign.institutionName ? `<p>${campaign.institutionName}</p>` : ''}
+    <p><strong>ക്യാമ്പിൽ ഇല്ലാത്ത വിദ്യാർത്ഥികളുടെ കണക്കുകൾ (Non-Camp Students Report)</strong> | കുട്ടികൾ: ${students.length}</p>
+  </div>
+
+  <div class="section-title">ഭാഗം 1: ദിവസേനയുള്ള വിൽപ്പന പുരോഗതി (Daily Progression Breakdown)</div>
+  <table>
+    <thead>
+      <tr>
+        <th>ദിവസം</th>
+        <th>വിറ്റത്</th>
+        <th>സ്റ്റോക്ക്</th>
+        <th>ലഭിച്ച തുക</th>
+        <th>ചിലവ്</th>
+        <th>ദിവസത്തെ തുക</th>
+        <th>ആകെ തുക</th>
+        <th>ശരാശരി</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${summaryRows}
+      <tr class="total-row">
+        <td>ആകെ (SUM)</td>
+        <td>${totals.totalSold}</td>
+        <td>${totals.totalRemainingStock}</td>
+        <td>₹${totals.totalCashReceived}</td>
+        <td>₹${totals.totalExpenses}</td>
+        <td>₹${totals.totalNetCash}</td>
+        <td>₹${totals.totalNetCash}</td>
+        <td>₹${totals.weightedAverage}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <div class="section-title">ഭാഗം 2: വിദ്യാർത്ഥികളുടെ സമഗ്ര പട്ടിക & റാങ്കിംഗ് (Students List & Rankings)</div>
+  <table>
+    <thead>
+      <tr>
+        <th>റാങ്ക്</th>
+        <th>കോഡ്</th>
+        <th>വിദ്യാർത്ഥിയുടെ പേര്</th>
+        <th>ലക്ഷ്യം</th>
+        <th>ബാക്കി ലക്ഷ്യം</th>
+        <th>കൊണ്ടുപോയത്</th>
+        <th>വിറ്റത്</th>
+        <th>സ്റ്റോക്ക്</th>
+        <th>ലഭിച്ച തുക</th>
+        <th>ചിലവ്</th>
+        <th>ആകെ തുക</th>
+        <th>ശരാശരി</th>
+        <th>പുരോഗതി</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${studentRows}
+      <tr class="total-row">
+        <td colspan="3">ആകെ തുക (SUM)</td>
+        <td>${totals.totalTarget}</td>
+        <td>${totals.totalTargetRemaining}</td>
+        <td>${totals.totalTaken}</td>
+        <td>${totals.totalSold}</td>
+        <td>${totals.totalRemainingStock}</td>
+        <td>₹${totals.totalCashReceived}</td>
+        <td>₹${totals.totalExpenses}</td>
+        <td>₹${totals.totalNetCash}</td>
+        <td>₹${totals.weightedAverage}</td>
+        <td>${totals.progressPercentage || 0}%</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>`;
+  }
 }
