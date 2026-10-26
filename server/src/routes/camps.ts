@@ -4,6 +4,14 @@ import prisma from '../prisma';
 import { authenticateToken, requireRole, AuthenticatedRequest } from '../middleware/auth';
 import { createAuditLog } from '../services/auditService';
 import { ExcelService } from '../services/excelService';
+import {
+  calculateDay1StudentRow,
+  calculateDayStudentRow,
+  calculateDay1Totals,
+  calculateDailyTotals,
+  StudentInput,
+  CumulativeHistory,
+} from '../services/calculations';
 
 export const campsRouter = Router();
 
@@ -217,15 +225,165 @@ campsRouter.get(
       // Unassigned students with their metrics
       const unassignedStudents = await getStudentMetricsForCampaign(campaignId, unassignedList);
 
+      let unassignedTotalTarget = 0;
+      let unassignedTotalTargetRemaining = 0;
+      let unassignedTotalTaken = 0;
+      let unassignedTotalSold = 0;
+      let unassignedTotalStock = 0;
+      let unassignedTotalCash = 0;
+      let unassignedTotalExp = 0;
+      let unassignedTotalNet = 0;
+
+      unassignedStudents.forEach((s) => {
+        unassignedTotalTarget += s.target;
+        unassignedTotalTargetRemaining += s.targetRemaining;
+        unassignedTotalTaken += s.calendarsTaken;
+        unassignedTotalSold += s.calendarsSold;
+        unassignedTotalStock += s.remainingStock;
+        unassignedTotalCash += s.cashReceived;
+        unassignedTotalExp += s.expenses;
+        unassignedTotalNet += s.netCash;
+      });
+
+      const unassignedWeightedAvg =
+        unassignedTotalSold > 0 ? Math.round((unassignedTotalNet / unassignedTotalSold) * 100) / 100 : 0;
+      const unassignedProgress =
+        unassignedTotalTarget > 0
+          ? Math.min(100, Math.round((unassignedTotalSold / unassignedTotalTarget) * 100))
+          : 0;
+
+      const unassignedTotals = {
+        totalTarget: unassignedTotalTarget,
+        totalTargetRemaining: unassignedTotalTargetRemaining,
+        totalTaken: unassignedTotalTaken,
+        totalSold: unassignedTotalSold,
+        totalRemainingStock: unassignedTotalStock,
+        totalCashReceived: unassignedTotalCash,
+        totalExpenses: unassignedTotalExp,
+        totalNetCash: unassignedTotalNet,
+        weightedAverage: unassignedWeightedAvg,
+        progressPercentage: unassignedProgress,
+      };
+
+      // Day-by-day calculations for unassigned students
+      const durationDays = Math.max(campaign.durationDays || 7, 7);
+      const unassignedStudentIds = unassignedList.map((cs) => cs.studentId);
+
+      const allUnassignedSales =
+        unassignedStudentIds.length > 0
+          ? await prisma.dailySale.findMany({
+              where: {
+                campaignId,
+                studentId: { in: unassignedStudentIds },
+              },
+            })
+          : [];
+
+      const unassignedSalesMap: { [studentId: string]: { [day: number]: any } } = {};
+      allUnassignedSales.forEach((s) => {
+        if (!unassignedSalesMap[s.studentId]) {
+          unassignedSalesMap[s.studentId] = {};
+        }
+        unassignedSalesMap[s.studentId][s.dayNumber] = s;
+      });
+
+      const unassignedDaySales: { [day: number]: { dayNumber: number; rows: any[]; totals: any } } = {};
+      const unassignedDailySummary: any[] = [];
+      let runningCumulativeNetCash = 0;
+
+      for (let d = 1; d <= durationDays; d++) {
+        let entryRows: any[] = [];
+        let dayTotals: any;
+
+        if (d === 1) {
+          entryRows = unassignedList.map((cs: any) => {
+            const sale = unassignedSalesMap[cs.studentId]?.[1];
+            const input: StudentInput = {
+              studentId: cs.studentId,
+              studentCode: cs.student.studentCode,
+              studentName: cs.student.name,
+              target: cs.targetCalendars || 0,
+              calendarsTaken: sale?.calendarsTaken || 0,
+              calendarsSold: sale?.calendarsSold || 0,
+              cashReceived: sale?.cashReceived || 0,
+              expenses: sale?.expenses || 0,
+              notes: sale?.notes,
+            };
+            return calculateDay1StudentRow(input, campaign.calendarPrice);
+          });
+          dayTotals = calculateDay1Totals(entryRows);
+        } else {
+          entryRows = unassignedList.map((cs: any) => {
+            const sMap = unassignedSalesMap[cs.studentId] || {};
+            let prevSold = 0;
+            let prevNet = 0;
+            for (let prevD = 1; prevD < d; prevD++) {
+              const prevSale = sMap[prevD];
+              if (prevSale) {
+                prevSold += prevSale.calendarsSold;
+                prevNet += prevSale.cashReceived - prevSale.expenses;
+              }
+            }
+            const sale = sMap[d];
+            const input: StudentInput = {
+              studentId: cs.studentId,
+              studentCode: cs.student.studentCode,
+              studentName: cs.student.name,
+              target: cs.targetCalendars || 0,
+              calendarsTaken: sale?.calendarsTaken || 0,
+              calendarsSold: sale?.calendarsSold || 0,
+              cashReceived: sale?.cashReceived || 0,
+              expenses: sale?.expenses || 0,
+              notes: sale?.notes,
+            };
+            const history: CumulativeHistory = {
+              previousCumulativeSold: prevSold,
+              previousCumulativeNetCash: prevNet,
+            };
+            return calculateDayStudentRow(input, history, campaign.calendarPrice);
+          });
+          dayTotals = calculateDailyTotals(entryRows);
+        }
+
+        unassignedDaySales[d] = {
+          dayNumber: d,
+          rows: entryRows,
+          totals: dayTotals,
+        };
+
+        const dayNet = dayTotals.netCash || 0;
+        runningCumulativeNetCash += dayNet;
+
+        unassignedDailySummary.push({
+          dayNumber: d,
+          dayLabel: `Day ${d}`,
+          calendarsSold: dayTotals.calendarsSold || 0,
+          remainingStock: dayTotals.remainingCalendars || 0,
+          cashReceived: dayTotals.cashReceived || 0,
+          expenses: dayTotals.expenses || 0,
+          dailyNetCash: dayNet,
+          cumulativeNetCash: runningCumulativeNetCash,
+          average:
+            (dayTotals.calendarsSold || 0) > 0
+              ? Math.round((dayNet / dayTotals.calendarsSold) * 100) / 100
+              : 0,
+        });
+      }
+
       res.json({
         campaign: {
           id: campaign.id,
           name: campaign.name,
           currency: campaign.currency,
           calendarPrice: campaign.calendarPrice,
+          durationDays,
         },
         camps: campsData,
         unassignedStudents,
+        unassignedTotals,
+        unassignedDailySummary,
+        unassignedDaySales,
+        durationDays,
         totalCampCount: camps.length,
       });
     } catch (error: any) {
@@ -651,6 +809,103 @@ campsRouter.get(
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(camp.name)}_Camp_Report.xlsx"`);
       res.send(buffer);
     } catch (error: any) {
+      res.status(500).json({ error: 'Excel export failed' });
+    }
+  }
+);
+
+/**
+ * GET /api/campaigns/:campaignId/camps/unassigned/export/excel
+ * Export unassigned students report to Excel
+ */
+campsRouter.get(
+  '/campaigns/:campaignId/camps/unassigned/export/excel',
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const campaignId = req.params.campaignId as string;
+      const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+      if (!campaign) {
+        res.status(404).json({ error: 'Campaign not found' });
+        return;
+      }
+
+      const allCamps = await prisma.camp.findMany({ where: { campaignId }, select: { id: true } });
+      const campIds = allCamps.map((c) => c.id);
+
+      const unassignedList = await prisma.campaignStudent.findMany({
+        where: {
+          campaignId,
+          isActive: true,
+          OR: [
+            { campId: null },
+            { campId: { notIn: campIds } },
+          ],
+        },
+        include: { student: true },
+        orderBy: { student: { studentCode: 'asc' } },
+      });
+
+      const students = await getStudentMetricsForCampaign(campaignId, unassignedList);
+
+      let totalTarget = 0;
+      let totalTargetRemaining = 0;
+      let totalTaken = 0;
+      let totalSold = 0;
+      let totalStock = 0;
+      let totalCash = 0;
+      let totalExp = 0;
+      let totalNet = 0;
+
+      students.forEach((s) => {
+        totalTarget += s.target;
+        totalTargetRemaining += s.targetRemaining;
+        totalTaken += s.calendarsTaken;
+        totalSold += s.calendarsSold;
+        totalStock += s.remainingStock;
+        totalCash += s.cashReceived;
+        totalExp += s.expenses;
+        totalNet += s.netCash;
+      });
+
+      const totals = {
+        totalTarget,
+        totalTargetRemaining,
+        totalTaken,
+        totalSold,
+        totalRemainingStock: totalStock,
+        totalCashReceived: totalCash,
+        totalExpenses: totalExp,
+        totalNetCash: totalNet,
+        weightedAverage: totalSold > 0 ? Math.round((totalNet / totalSold) * 100) / 100 : 0,
+      };
+
+      const rows = students.map((s) => ({
+        rank: s.rank,
+        studentCode: s.studentCode,
+        studentName: s.studentName,
+        target: s.target,
+        targetRemaining: s.targetRemaining,
+        totalTaken: s.calendarsTaken,
+        totalSold: s.calendarsSold,
+        remainingStock: s.remainingStock,
+        totalCashReceived: s.cashReceived,
+        totalExpenses: s.expenses,
+        totalNetCash: s.netCash,
+        average: s.average,
+      }));
+
+      const buffer = await ExcelService.exportLeaderboard(
+        `${campaign.name} - ക്യാമ്പിൽ ഇല്ലാത്ത കുട്ടികൾ (Non-Camp Students)`,
+        rows,
+        totals
+      );
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="Non_Camp_Students_Report.xlsx"`);
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Unassigned excel export error:', error);
       res.status(500).json({ error: 'Excel export failed' });
     }
   }

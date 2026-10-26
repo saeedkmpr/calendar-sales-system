@@ -20,6 +20,11 @@ import {
   Layers,
   X,
   ExternalLink,
+  UserMinus,
+  Calendar,
+  BarChart3,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { useCampaign } from '../context/CampaignContext';
 import { useAuth } from '../context/AuthContext';
@@ -77,7 +82,14 @@ export const CampsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [camps, setCamps] = useState<CampData[]>([]);
   const [unassignedStudents, setUnassignedStudents] = useState<CampStudent[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('overview'); // 'overview' | campId
+  const [unassignedTotals, setUnassignedTotals] = useState<CampTotals | null>(null);
+  const [unassignedDailySummary, setUnassignedDailySummary] = useState<any[]>([]);
+  const [unassignedDaySales, setUnassignedDaySales] = useState<{ [day: number]: { dayNumber: number; rows: any[]; totals: any } }>({});
+  const [durationDays, setDurationDays] = useState<number>(7);
+  const [unassignedSubTab, setUnassignedSubTab] = useState<'summary' | number>('summary');
+  const [unassignedMobileView, setUnassignedMobileView] = useState<'table' | 'cards'>('table');
+  const [unassignedSearchQuery, setUnassignedSearchQuery] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('overview'); // 'overview' | 'unassigned' | campId
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals
@@ -86,6 +98,8 @@ export const CampsPage: React.FC = () => {
   const [showAddStudentModal, setShowAddStudentModal] = useState<boolean>(false);
   const [showNewStudentModal, setShowNewStudentModal] = useState<boolean>(false);
   const [deletingCamp, setDeletingCamp] = useState<CampData | null>(null);
+  const [assigningStudent, setAssigningStudent] = useState<CampStudent | null>(null);
+  const [targetCampId, setTargetCampId] = useState<string>('');
 
   // Form states
   const [campName, setCampName] = useState<string>('');
@@ -112,9 +126,17 @@ export const CampsPage: React.FC = () => {
       const campList = res.camps || [];
       setCamps(campList);
       setUnassignedStudents(res.unassignedStudents || []);
+      setUnassignedTotals(res.unassignedTotals || null);
+      setUnassignedDailySummary(res.unassignedDailySummary || []);
+      setUnassignedDaySales(res.unassignedDaySales || {});
+      setDurationDays(res.durationDays || 7);
 
       // If activeTab is an ID that no longer exists, default to 'overview'
-      if (activeTab !== 'overview' && !campList.some((c: CampData) => c.id === activeTab)) {
+      if (
+        activeTab !== 'overview' &&
+        activeTab !== 'unassigned' &&
+        !campList.some((c: CampData) => c.id === activeTab)
+      ) {
         setActiveTab('overview');
       }
     } catch (err: any) {
@@ -332,6 +354,36 @@ export const CampsPage: React.FC = () => {
     }
   };
 
+  const handleUnassignedExcelExport = async () => {
+    if (!currentCampaign) return;
+    try {
+      await api.downloadFile(
+        `/campaigns/${currentCampaign.id}/camps/unassigned/export/excel`,
+        `${currentCampaign.name}_Non_Camp_Students.xlsx`
+      );
+    } catch (err: any) {
+      alert(err.message || 'Excel export failed');
+    }
+  };
+
+  const handleAssignToCamp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assigningStudent || !targetCampId) return;
+    try {
+      setIsSubmitting(true);
+      await api.post(`/camps/${targetCampId}/students`, {
+        studentId: assigningStudent.studentId,
+      });
+      setAssigningStudent(null);
+      setTargetCampId('');
+      await fetchCamps();
+    } catch (err: any) {
+      alert(err.message || (language === 'en' ? 'Failed to assign student to camp' : 'വിദ്യാർത്ഥിയെ ക്യാമ്പിലേക്ക് മാറ്റാൻ കഴിഞ്ഞില്ല'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleNativePrint = () => {
     window.print();
   };
@@ -453,6 +505,28 @@ export const CampsPage: React.FC = () => {
             </span>
           </button>
         ))}
+
+        {/* Unassigned / Non-Camp Students Tab */}
+        <button
+          onClick={() => setActiveTab('unassigned')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'unassigned'
+              ? 'border-amber-600 text-amber-700 bg-amber-50/50 rounded-t-lg'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
+          }`}
+        >
+          <UserMinus className="w-4 h-4 text-amber-600" />
+          <span>{t.camps.unassignedTab || 'ക്യാമ്പിൽ ഇല്ലാത്തവർ'}</span>
+          <span
+            className={`ml-1 px-2 py-0.5 text-xs rounded-full font-medium ${
+              activeTab === 'unassigned'
+                ? 'bg-amber-200 text-amber-900'
+                : 'bg-amber-100 text-amber-800'
+            }`}
+          >
+            {unassignedStudents.length}
+          </span>
+        </button>
       </div>
 
       {/* Loading state */}
@@ -647,6 +721,681 @@ export const CampsPage: React.FC = () => {
               ))}
             </div>
           </div>
+        </div>
+      ) : activeTab === 'unassigned' ? (
+        /* ================= UNASSIGNED / NON-CAMP STUDENTS VIEW ================= */
+        <div className="space-y-6">
+          {/* Header Card */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="p-2.5 rounded-xl bg-amber-100 text-amber-700 shadow-sm shadow-amber-500/10">
+                    <UserMinus className="w-6 h-6" />
+                  </span>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                      <span>{t.camps.unassignedTab || 'ക്യാമ്പിൽ ഇല്ലാത്തവർ'}</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                        {unassignedStudents.length} {t.camps.studentsCount}
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {t.camps.unassignedSubtitle || 'ടീം ക്യാമ്പുകളിൽ ഉൾപ്പെടാത്ത വിദ്യാർത്ഥികളുടെ ദിവസേനയുള്ള കണക്കുകളും ആകെ സംഗ്രഹവും'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap items-center gap-2 print:hidden">
+                <button
+                  onClick={handleUnassignedExcelExport}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  title="Excel"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>{t.camps.exportUnassignedExcel || 'Excel ഡൗൺലോഡ്'}</span>
+                </button>
+                <button
+                  onClick={handleNativePrint}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium shadow-sm transition-colors"
+                >
+                  <Printer className="w-4 h-4 text-slate-500" />
+                  <span>{t.camps.printPdfBtn}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Sub-Tabs: Total Summary vs Days 1..N */}
+            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1 print:hidden">
+              <button
+                onClick={() => setUnassignedSubTab('summary')}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  unassignedSubTab === 'summary'
+                    ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>{t.camps.totalSummaryTab || 'ആകെ സംഗ്രഹം'}</span>
+              </button>
+
+              {Array.from({ length: durationDays }, (_, i) => i + 1).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setUnassignedSubTab(d)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    unassignedSubTab === d
+                      ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{language === 'en' ? `Day ${d}` : `ദിവസം ${d}`}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {unassignedStudents.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-slate-800">
+                {t.camps.noUnassignedStudents || 'എല്ലാ കുട്ടികളും നിലവിൽ ഏതെങ്കിലും ഒരു ക്യാമ്പിൽ ഉള്ളവരാണ്!'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {language === 'en'
+                  ? 'All enrolled students have been assigned to team camps.'
+                  : 'എല്ലാ കുട്ടികളെയും വിജയകരമായി ടീം ക്യാമ്പുകളിലേക്ക് ഉൾപ്പെടുത്തിയിരിക്കുന്നു.'}
+              </p>
+            </div>
+          ) : unassignedSubTab === 'summary' ? (
+            /* ================= SUB-TAB: TOTAL SUMMARY ================= */
+            <div className="space-y-6">
+              {/* KPI Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.totalTarget}</div>
+                  <div className="text-xl font-bold text-indigo-700 mt-1">
+                    {unassignedTotals?.totalTarget || 0}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {t.camps.remainingTarget}: {unassignedTotals?.totalTargetRemaining || 0}
+                  </div>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.calendarsTaken}</div>
+                  <div className="text-xl font-bold text-slate-800 mt-1">
+                    {unassignedTotals?.totalTaken || 0}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {t.camps.unassignedTab}
+                  </div>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.calendarsSold}</div>
+                  <div className="text-xl font-bold text-emerald-700 mt-1">
+                    {unassignedTotals?.totalSold || 0}
+                  </div>
+                  <div className="text-[11px] text-emerald-600 font-medium mt-0.5">
+                    {unassignedTotals?.progressPercentage || 0}% {t.camps.progressCompleted}
+                  </div>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.stockRemaining}</div>
+                  <div className="text-xl font-bold text-amber-600 mt-1">
+                    {unassignedTotals?.totalRemainingStock || 0}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{language === 'en' ? 'In hand' : 'കൈവശമുള്ളത്'}</div>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.cashReceived}</div>
+                  <div className="text-xl font-bold text-blue-700 mt-1">
+                    {currency}{(unassignedTotals?.totalCashReceived || 0).toLocaleString()}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{t.camps.totalCollection}</div>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">{t.camps.expenses}</div>
+                  <div className="text-xl font-bold text-rose-600 mt-1">
+                    {currency}{(unassignedTotals?.totalExpenses || 0).toLocaleString()}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{t.camps.totalExpenseSub}</div>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/20 shadow-sm text-center col-span-2 md:col-span-1">
+                  <div className="text-[11px] font-bold text-emerald-800 uppercase">{t.camps.netCash}</div>
+                  <div className="text-xl font-extrabold text-emerald-700 mt-1">
+                    {currency}{(unassignedTotals?.totalNetCash || 0).toLocaleString()}
+                  </div>
+                  <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                    {t.camps.averagePerCalendar}: {currency}{(unassignedTotals?.weightedAverage || 0).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Day-by-Day Sales Progression Table */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-amber-600" />
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {t.camps.daySummaryTitle || 'ദിവസേനയുള്ള വിൽപ്പന സംഗ്രഹം'}
+                    </h3>
+                  </div>
+                  <span className="text-xs text-slate-500 font-medium">
+                    {durationDays} {language === 'en' ? 'Days Duration' : 'ദിവസങ്ങൾ'}
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold">
+                        <th className="py-2.5 px-3">{t.camps.dayCol || 'ദിവസം'}</th>
+                        <th className="py-2.5 px-3 text-right text-emerald-700">{t.camps.soldCol}</th>
+                        <th className="py-2.5 px-3 text-right text-amber-600">{t.camps.stockCol}</th>
+                        <th className="py-2.5 px-3 text-right text-blue-700">{t.camps.cashCol}</th>
+                        <th className="py-2.5 px-3 text-right text-rose-600">{t.camps.expensesCol}</th>
+                        <th className="py-2.5 px-3 text-right text-emerald-800 font-bold">{t.summaryCols.dailyNetCash}</th>
+                        <th className="py-2.5 px-3 text-right text-blue-800 font-bold">{t.summaryCols.cumulativeNetCash}</th>
+                        <th className="py-2.5 px-3 text-right">{t.camps.averageCol}</th>
+                        <th className="py-2.5 px-3 text-center print:hidden">{t.camps.actionCol}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {unassignedDailySummary.map((ds) => (
+                        <tr key={ds.dayNumber} className="hover:bg-amber-50/20 transition-colors">
+                          <td className="py-2.5 px-3 font-bold text-slate-800 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            <span>{language === 'en' ? `Day ${ds.dayNumber}` : `ദിവസം ${ds.dayNumber}`}</span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-bold text-emerald-700">{ds.calendarsSold}</td>
+                          <td className="py-2.5 px-3 text-right font-medium text-amber-600">{ds.remainingStock}</td>
+                          <td className="py-2.5 px-3 text-right text-blue-700">{currency}{ds.cashReceived.toLocaleString()}</td>
+                          <td className="py-2.5 px-3 text-right text-rose-600">{currency}{ds.expenses.toLocaleString()}</td>
+                          <td className="py-2.5 px-3 text-right font-bold text-emerald-700 bg-emerald-50/20">{currency}{ds.dailyNetCash.toLocaleString()}</td>
+                          <td className="py-2.5 px-3 text-right font-bold text-blue-800 bg-blue-50/20">{currency}{ds.cumulativeNetCash.toLocaleString()}</td>
+                          <td className="py-2.5 px-3 text-right font-medium text-slate-700">{currency}{ds.average.toFixed(2)}</td>
+                          <td className="py-2.5 px-3 text-center print:hidden">
+                            <button
+                              onClick={() => setUnassignedSubTab(ds.dayNumber)}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors inline-flex items-center gap-1"
+                            >
+                              <span>{language === 'en' ? 'View Day' : 'കണക്ക് കാണുക'}</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-300">
+                        <td className="py-2.5 px-3">{t.camps.totalRow}</td>
+                        <td className="py-2.5 px-3 text-right text-emerald-700">{unassignedTotals?.totalSold || 0}</td>
+                        <td className="py-2.5 px-3 text-right text-amber-600">{unassignedTotals?.totalRemainingStock || 0}</td>
+                        <td className="py-2.5 px-3 text-right text-blue-700">{currency}{(unassignedTotals?.totalCashReceived || 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-rose-600">{currency}{(unassignedTotals?.totalExpenses || 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-emerald-700">{currency}{(unassignedTotals?.totalNetCash || 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-blue-800">{currency}{(unassignedTotals?.totalNetCash || 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-slate-800">{currency}{(unassignedTotals?.weightedAverage || 0).toFixed(2)}</td>
+                        <td className="py-2.5 px-3 print:hidden"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* Cumulative Students Ranking Table */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-amber-600" />
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {t.camps.unassignedTab} - {t.camps.campStudentListTitle}
+                    </h3>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">
+                      {unassignedStudents.length}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1 md:w-64">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={unassignedSearchQuery}
+                        onChange={(e) => setUnassignedSearchQuery(e.target.value)}
+                        placeholder={t.camps.searchStudentPlaceholder}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                      />
+                    </div>
+
+                    <div className="flex items-center bg-slate-200/60 p-0.5 rounded-lg text-xs md:hidden">
+                      <button
+                        onClick={() => setUnassignedMobileView('table')}
+                        className={`p-1.5 rounded ${unassignedMobileView === 'table' ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
+                        title={t.camps.tableView}
+                      >
+                        <List className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setUnassignedMobileView('cards')}
+                        className={`p-1.5 rounded ${unassignedMobileView === 'cards' ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
+                        title={t.camps.cardsView}
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table View */}
+                <div className={`${unassignedMobileView === 'cards' ? 'hidden md:block' : 'block'} overflow-x-auto`}>
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold">
+                        <th className="py-2.5 px-3 w-12 text-center sticky left-0 bg-slate-100 z-10">{t.camps.rankCol}</th>
+                        <th className="py-2.5 px-3 min-w-[150px] sticky left-12 bg-slate-100 z-10">{t.camps.studentNameCol}</th>
+                        <th className="py-2.5 px-3 text-right">{t.camps.targetCol}</th>
+                        <th className="py-2.5 px-3 text-right">{t.camps.targetRemCol}</th>
+                        <th className="py-2.5 px-3 text-right">{t.camps.takenCol}</th>
+                        <th className="py-2.5 px-3 text-right text-emerald-700">{t.camps.soldCol}</th>
+                        <th className="py-2.5 px-3 text-right text-amber-600">{t.camps.stockCol}</th>
+                        <th className="py-2.5 px-3 text-right text-blue-700">{t.camps.cashCol}</th>
+                        <th className="py-2.5 px-3 text-right text-rose-600">{t.camps.expensesCol}</th>
+                        <th className="py-2.5 px-3 text-right text-emerald-800 font-bold">{t.camps.netCashCol}</th>
+                        <th className="py-2.5 px-3 text-right">{t.camps.averageCol}</th>
+                        <th className="py-2.5 px-3 min-w-[110px]">{t.camps.progressCol}</th>
+                        {(isAdmin || isOperator) && (
+                          <th className="py-2.5 px-3 text-center print:hidden">{t.camps.actionCol}</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {unassignedStudents
+                        .filter((s) => {
+                          if (!unassignedSearchQuery.trim()) return true;
+                          const q = unassignedSearchQuery.toLowerCase();
+                          return s.studentName.toLowerCase().includes(q) || s.studentCode.toLowerCase().includes(q);
+                        })
+                        .map((s) => (
+                          <tr key={s.studentId} className="hover:bg-amber-50/20 transition-colors">
+                            <td className="py-2.5 px-3 text-center font-bold text-slate-700 sticky left-0 bg-white z-10">
+                              <span className="w-5 h-5 rounded-full bg-slate-100 inline-flex items-center justify-center text-[10px]">
+                                {s.rank}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-900 sticky left-12 bg-white z-10">
+                              <div className="flex flex-col">
+                                <span>{s.studentName}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">{s.studentCode}</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 text-right text-slate-600">{s.target}</td>
+                            <td className="py-2.5 px-3 text-right text-slate-500">{s.targetRemaining}</td>
+                            <td className="py-2.5 px-3 text-right font-medium text-slate-800">{s.calendarsTaken}</td>
+                            <td className="py-2.5 px-3 text-right font-bold text-emerald-700">{s.calendarsSold}</td>
+                            <td className="py-2.5 px-3 text-right font-medium text-amber-600">{s.remainingStock}</td>
+                            <td className="py-2.5 px-3 text-right text-blue-700">{currency}{s.cashReceived.toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right text-rose-600">{currency}{s.expenses.toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right font-bold text-emerald-700 bg-emerald-50/20">
+                              {currency}{s.netCash.toLocaleString()}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-medium text-slate-700">{currency}{s.average.toFixed(2)}</td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${
+                                      s.progressPercentage >= 100
+                                        ? 'bg-emerald-500'
+                                        : s.progressPercentage >= 50
+                                        ? 'bg-blue-500'
+                                        : 'bg-amber-500'
+                                    }`}
+                                    style={{ width: `${Math.min(100, s.progressPercentage)}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] text-slate-500 font-medium w-8 text-right">
+                                  {s.progressPercentage}%
+                                </span>
+                              </div>
+                            </td>
+                            {(isAdmin || isOperator) && (
+                              <td className="py-2.5 px-3 text-center print:hidden">
+                                <button
+                                  onClick={() => {
+                                    setAssigningStudent(s);
+                                    setTargetCampId(camps[0]?.id || '');
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors"
+                                  title={t.camps.assignToCampBtn || 'ക്യാമ്പിലേക്ക് മാറ്റുക'}
+                                >
+                                  <Tent className="w-3.5 h-3.5" />
+                                  <span>{t.camps.assignToCampBtn || 'ക്യാമ്പിലേക്ക് മാറ്റുക'}</span>
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards View */}
+                <div className={`${unassignedMobileView === 'table' ? 'hidden' : 'block md:hidden'} p-3 space-y-3`}>
+                  {unassignedStudents
+                    .filter((s) => {
+                      if (!unassignedSearchQuery.trim()) return true;
+                      const q = unassignedSearchQuery.toLowerCase();
+                      return s.studentName.toLowerCase().includes(q) || s.studentCode.toLowerCase().includes(q);
+                    })
+                    .map((s) => (
+                      <div key={s.studentId} className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-xs font-bold inline-flex items-center justify-center">
+                              #{s.rank}
+                            </span>
+                            <div>
+                              <div className="font-bold text-slate-900 text-sm">{s.studentName}</div>
+                              <div className="text-[10px] font-mono text-slate-400">{s.studentCode}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-emerald-700">{currency}{s.netCash.toLocaleString()}</div>
+                            <div className="text-[10px] text-slate-400">{t.camps.netCash}</div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-2 text-center text-xs bg-slate-50 p-2 rounded-lg">
+                          <div>
+                            <span className="text-[10px] text-slate-400 block">{t.camps.targetCol}</span>
+                            <span className="font-semibold text-slate-700">{s.target}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block">{t.camps.takenCol}</span>
+                            <span className="font-semibold text-slate-700">{s.calendarsTaken}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block">{t.camps.soldCol}</span>
+                            <span className="font-bold text-emerald-700">{s.calendarsSold}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block">{t.camps.stockCol}</span>
+                            <span className="font-semibold text-amber-600">{s.remainingStock}</span>
+                          </div>
+                        </div>
+
+                        {(isAdmin || isOperator) && (
+                          <div className="pt-1">
+                            <button
+                              onClick={() => {
+                                setAssigningStudent(s);
+                                setTargetCampId(camps[0]?.id || '');
+                              }}
+                              className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors"
+                            >
+                              <Tent className="w-3.5 h-3.5" />
+                              <span>{t.camps.assignToCampBtn || 'ക്യാമ്പിലേക്ക് മാറ്റുക'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ================= SUB-TAB: DAILY SALES (DAY 1 TO N) ================= */
+            <div className="space-y-4">
+              {/* Day Header & Quick Totals Bar */}
+              {(() => {
+                const dayNum = Number(unassignedSubTab);
+                const dayData = unassignedDaySales[dayNum];
+                const dayTotals = dayData?.totals;
+                const rows = dayData?.rows || [];
+
+                const filteredDayRows = rows.filter((r: any) => {
+                  if (!unassignedSearchQuery.trim()) return true;
+                  const q = unassignedSearchQuery.toLowerCase();
+                  return r.studentName.toLowerCase().includes(q) || r.studentCode.toLowerCase().includes(q);
+                });
+
+                return (
+                  <div className="space-y-4">
+                    {/* Day KPI bar */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <div className="text-[10px] font-semibold text-slate-500 uppercase">{t.camps.soldCol}</div>
+                        <div className="text-lg font-bold text-emerald-700 mt-0.5">
+                          {dayTotals?.calendarsSold || 0}
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <div className="text-[10px] font-semibold text-slate-500 uppercase">{t.camps.stockCol}</div>
+                        <div className="text-lg font-bold text-amber-600 mt-0.5">
+                          {dayTotals?.remainingCalendars || 0}
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <div className="text-[10px] font-semibold text-slate-500 uppercase">{t.camps.cashCol}</div>
+                        <div className="text-lg font-bold text-blue-700 mt-0.5">
+                          {currency}{(dayTotals?.cashReceived || 0).toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <div className="text-[10px] font-semibold text-slate-500 uppercase">{t.camps.expensesCol}</div>
+                        <div className="text-lg font-bold text-rose-600 mt-0.5">
+                          {currency}{(dayTotals?.expenses || 0).toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <div className="text-[10px] font-bold text-emerald-800 uppercase">{t.camps.netCash}</div>
+                        <div className="text-lg font-extrabold text-emerald-700 mt-0.5">
+                          {currency}{(dayTotals?.netCash || 0).toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <div className="text-[10px] font-semibold text-slate-500 uppercase">{t.camps.averageCol}</div>
+                        <div className="text-lg font-bold text-slate-700 mt-0.5">
+                          {currency}
+                          {(dayTotals?.calendarsSold || 0) > 0
+                            ? ((dayTotals?.netCash || 0) / (dayTotals?.calendarsSold || 1)).toFixed(2)
+                            : '0.00'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Table View Card */}
+                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                      <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-amber-600" />
+                          <h3 className="text-sm font-bold text-slate-900">
+                            {language === 'en' ? `Day ${dayNum} Sales Entries` : `ദിവസം ${dayNum} - വിൽപ്പന കണക്കുകൾ`}
+                          </h3>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-semibold">
+                            {filteredDayRows.length} {t.camps.studentsCount}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1 md:w-64">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={unassignedSearchQuery}
+                              onChange={(e) => setUnassignedSearchQuery(e.target.value)}
+                              placeholder={t.camps.searchStudentPlaceholder}
+                              className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                            />
+                          </div>
+
+                          <div className="flex items-center bg-slate-200/60 p-0.5 rounded-lg text-xs md:hidden">
+                            <button
+                              onClick={() => setUnassignedMobileView('table')}
+                              className={`p-1.5 rounded ${unassignedMobileView === 'table' ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
+                            >
+                              <List className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setUnassignedMobileView('cards')}
+                              className={`p-1.5 rounded ${unassignedMobileView === 'cards' ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
+                            >
+                              <LayoutGrid className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Day Table */}
+                      <div className={`${unassignedMobileView === 'cards' ? 'hidden md:block' : 'block'} overflow-x-auto`}>
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold">
+                              <th className="py-2.5 px-3 w-10 text-center sticky left-0 bg-slate-100 z-10">#</th>
+                              <th className="py-2.5 px-3 min-w-[150px] sticky left-10 bg-slate-100 z-10">{t.camps.studentNameCol}</th>
+                              <th className="py-2.5 px-3 text-right">{t.camps.targetCol}</th>
+                              {dayNum > 1 && (
+                                <th className="py-2.5 px-3 text-right">{t.camps.targetRemCol}</th>
+                              )}
+                              <th className="py-2.5 px-3 text-right">{t.camps.takenCol}</th>
+                              <th className="py-2.5 px-3 text-right text-emerald-700">{t.camps.soldCol}</th>
+                              <th className="py-2.5 px-3 text-right text-amber-600">{t.camps.stockCol}</th>
+                              <th className="py-2.5 px-3 text-right text-blue-700">{t.camps.cashCol}</th>
+                              <th className="py-2.5 px-3 text-right text-rose-600">{t.camps.expensesCol}</th>
+                              <th className="py-2.5 px-3 text-right text-emerald-800 font-bold">{t.camps.netCashCol}</th>
+                              <th className="py-2.5 px-3 text-right">{t.camps.averageCol}</th>
+                              {dayNum > 1 && (
+                                <>
+                                  <th className="py-2.5 px-3 text-right text-emerald-800">{t.daysCols.cumulativeSold}</th>
+                                  <th className="py-2.5 px-3 text-right text-blue-800">{t.daysCols.cumulativeNetCash}</th>
+                                </>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {filteredDayRows.map((r: any, idx: number) => (
+                              <tr key={r.studentId} className="hover:bg-amber-50/20 transition-colors">
+                                <td className="py-2.5 px-3 text-center text-slate-500 sticky left-0 bg-white z-10">{idx + 1}</td>
+                                <td className="py-2.5 px-3 font-semibold text-slate-900 sticky left-10 bg-white z-10">
+                                  <div className="flex flex-col">
+                                    <span>{r.studentName}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">{r.studentCode}</span>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-right text-slate-600">{r.target}</td>
+                                {dayNum > 1 && (
+                                  <td className="py-2.5 px-3 text-right text-slate-500">{r.targetRemaining ?? '-'}</td>
+                                )}
+                                <td className="py-2.5 px-3 text-right font-medium text-slate-800">{r.calendarsTaken}</td>
+                                <td className="py-2.5 px-3 text-right font-bold text-emerald-700">{r.calendarsSold}</td>
+                                <td className="py-2.5 px-3 text-right font-medium text-amber-600">{r.remainingCalendars}</td>
+                                <td className="py-2.5 px-3 text-right text-blue-700">{currency}{r.cashReceived.toLocaleString()}</td>
+                                <td className="py-2.5 px-3 text-right text-rose-600">{currency}{r.expenses.toLocaleString()}</td>
+                                <td className="py-2.5 px-3 text-right font-bold text-emerald-700 bg-emerald-50/20">
+                                  {currency}{r.netCash.toLocaleString()}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-medium text-slate-700">{currency}{r.average?.toFixed(2) ?? '0.00'}</td>
+                                {dayNum > 1 && (
+                                  <>
+                                    <td className="py-2.5 px-3 text-right font-bold text-emerald-800">{r.cumulativeSold}</td>
+                                    <td className="py-2.5 px-3 text-right font-bold text-blue-800">{currency}{r.cumulativeNetCash?.toLocaleString()}</td>
+                                  </>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-300">
+                              <td colSpan={2} className="py-2.5 px-3">{t.camps.totalRow}</td>
+                              <td className="py-2.5 px-3 text-right">{dayTotals?.target ?? '-'}</td>
+                              {dayNum > 1 && (
+                                <td className="py-2.5 px-3 text-right">{dayTotals?.targetRemaining ?? '-'}</td>
+                              )}
+                              <td className="py-2.5 px-3 text-right">{dayTotals?.calendarsTaken || 0}</td>
+                              <td className="py-2.5 px-3 text-right text-emerald-700">{dayTotals?.calendarsSold || 0}</td>
+                              <td className="py-2.5 px-3 text-right text-amber-600">{dayTotals?.remainingCalendars || 0}</td>
+                              <td className="py-2.5 px-3 text-right text-blue-700">{currency}{(dayTotals?.cashReceived || 0).toLocaleString()}</td>
+                              <td className="py-2.5 px-3 text-right text-rose-600">{currency}{(dayTotals?.expenses || 0).toLocaleString()}</td>
+                              <td className="py-2.5 px-3 text-right text-emerald-700">{currency}{(dayTotals?.netCash || 0).toLocaleString()}</td>
+                              <td className="py-2.5 px-3 text-right text-slate-800">
+                                {currency}
+                                {(dayTotals?.calendarsSold || 0) > 0
+                                  ? ((dayTotals?.netCash || 0) / (dayTotals?.calendarsSold || 1)).toFixed(2)
+                                  : '0.00'}
+                              </td>
+                              {dayNum > 1 && (
+                                <>
+                                  <td className="py-2.5 px-3 text-right text-emerald-800">{dayTotals?.cumulativeSold || 0}</td>
+                                  <td className="py-2.5 px-3 text-right text-blue-800">{currency}{(dayTotals?.cumulativeNetCash || 0).toLocaleString()}</td>
+                                </>
+                              )}
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+
+                      {/* Mobile Cards for Day */}
+                      <div className={`${unassignedMobileView === 'table' ? 'hidden' : 'block md:hidden'} p-3 space-y-3`}>
+                        {filteredDayRows.map((r: any, idx: number) => (
+                          <div key={r.studentId} className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold inline-flex items-center justify-center">
+                                  #{idx + 1}
+                                </span>
+                                <div>
+                                  <div className="font-bold text-slate-900 text-sm">{r.studentName}</div>
+                                  <div className="text-[10px] font-mono text-slate-400">{r.studentCode}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs font-bold text-emerald-700">{currency}{r.netCash.toLocaleString()}</div>
+                                <div className="text-[10px] text-slate-400">{t.camps.netCash}</div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-2 text-center text-xs bg-slate-50 p-2 rounded-lg">
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">{t.camps.takenCol}</span>
+                                <span className="font-semibold text-slate-700">{r.calendarsTaken}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">{t.camps.soldCol}</span>
+                                <span className="font-bold text-emerald-700">{r.calendarsSold}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">{t.camps.stockCol}</span>
+                                <span className="font-semibold text-amber-600">{r.remainingCalendars}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">{t.camps.averageCol}</span>
+                                <span className="font-semibold text-slate-700">{currency}{r.average?.toFixed(2) ?? '0'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
       ) : activeCamp ? (
         /* ================= INDIVIDUAL CAMP VIEW ================= */
@@ -1439,6 +2188,91 @@ export const CampsPage: React.FC = () => {
                 {isSubmitting ? t.camps.deleting : t.camps.confirmDeleteBtn}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: ASSIGN UNASSIGNED STUDENT TO A CAMP ================= */}
+      {assigningStudent && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tent className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base font-bold text-slate-900">
+                  {t.camps.assignToCampBtn || 'ക്യാമ്പിലേക്ക് മാറ്റുക'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setAssigningStudent(null)}
+                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignToCamp} className="p-5 space-y-4">
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-500">{t.camps.studentNameCol}</div>
+                <div className="text-base font-bold text-slate-900">{assigningStudent.studentName}</div>
+                <div className="text-xs font-mono text-slate-400">{assigningStudent.studentCode}</div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">
+                  {t.camps.selectTargetCamp || 'ക്യാമ്പ് തിരഞ്ഞെടുക്കുക:'}
+                </label>
+                <div className="space-y-2">
+                  {camps.map((camp) => (
+                    <label
+                      key={camp.id}
+                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${
+                        targetCampId === camp.id
+                          ? 'border-emerald-500 bg-emerald-50/50 text-emerald-900'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="targetCamp"
+                          value={camp.id}
+                          checked={targetCampId === camp.id}
+                          onChange={(e) => setTargetCampId(e.target.value)}
+                          className="text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <div>
+                          <div className="text-sm font-bold text-slate-900">{camp.name}</div>
+                          {camp.location && (
+                            <div className="text-xs text-slate-500">{camp.location}</div>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                        {camp.studentCount} {t.camps.studentsCount}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAssigningStudent(null)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-700 transition-colors"
+                >
+                  {t.common.cancel}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !targetCampId}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                >
+                  {isSubmitting ? t.common.saving : (t.camps.assignToCampBtn || 'ക്യാമ്പിലേക്ക് മാറ്റുക')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
