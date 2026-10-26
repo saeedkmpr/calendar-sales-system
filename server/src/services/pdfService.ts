@@ -195,22 +195,6 @@ export class PdfService {
   </style>
 </head>
 <body>
-  <div class="no-print" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #86efac; padding: 12px 18px; border-radius: 8px;">
-    <div style="font-size: 13px; color: #166534;">
-      <strong>📄 PDF ഫയൽ ആയി സേവ് ചെയ്യാൻ:</strong> താഴെയുള്ള ബട്ടൺ ക്ലിക്ക് ചെയ്യുക. Print വിൻഡോയിൽ <strong>Destination: "Save as PDF"</strong> തിരഞ്ഞെടുത്ത് സേവ് ചെയ്യുക.
-    </div>
-    <button onclick="window.print()" style="padding: 9px 18px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-      🖨️ പ്രിന്റ് / Save as PDF
-    </button>
-  </div>
-  <script>
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        window.print();
-      }, 500);
-    });
-  </script>
-
   <div class="header">
     <h1>${campaign.name}</h1>
     ${campaign.institutionName ? `<p>${campaign.institutionName}</p>` : ''}
@@ -332,22 +316,6 @@ export class PdfService {
   </style>
 </head>
 <body>
-  <div class="no-print" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #86efac; padding: 12px 18px; border-radius: 8px;">
-    <div style="font-size: 13px; color: #166534;">
-      <strong>📄 PDF ഫയൽ ആയി സേവ് ചെയ്യാൻ:</strong> താഴെയുള്ള ബട്ടൺ ക്ലിക്ക് ചെയ്യുക. Print വിൻഡോയിൽ <strong>Destination: "Save as PDF"</strong> തിരഞ്ഞെടുത്ത് സേവ് ചെയ്യുക.
-    </div>
-    <button onclick="window.print()" style="padding: 9px 18px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-      🖨️ പ്രിന്റ് / Save as PDF
-    </button>
-  </div>
-  <script>
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        window.print();
-      }, 500);
-    });
-  </script>
-
   <div class="header">
     <h1>${campaign.name}</h1>
     ${campaign.institutionName ? `<p>${campaign.institutionName}</p>` : ''}
@@ -482,22 +450,6 @@ export class PdfService {
   </style>
 </head>
 <body>
-  <div class="no-print" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #86efac; padding: 10px 16px; border-radius: 8px;">
-    <div style="font-size: 12px; color: #166534;">
-      <strong>📄 PDF ഫയൽ ആയി സേവ് ചെയ്യാൻ:</strong> Print വിൻഡോയിൽ <strong>Destination: "Save as PDF"</strong> തിരഞ്ഞെടുത്ത് സേവ് ചെയ്യുക.
-    </div>
-    <button onclick="window.print()" style="padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700;">
-      🖨️ പ്രിന്റ് / Save as PDF
-    </button>
-  </div>
-  <script>
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        window.print();
-      }, 500);
-    });
-  </script>
-
   <div class="header">
     <h1>${campaign.name}</h1>
     ${campaign.institutionName ? `<p>${campaign.institutionName}</p>` : ''}
