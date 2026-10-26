@@ -1,4 +1,4 @@
-const BASE_URL = '/api';
+const BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
 export interface ApiResponse<T> {
   data?: T;
