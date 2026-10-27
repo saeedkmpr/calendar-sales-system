@@ -1,4 +1,4 @@
-// Prisma Schema for PostgreSQL (Production / Supabase)
+// Prisma Schema for PostgreSQL (Production / Supabase / Neon / Render Postgres)
 generator client {
   provider = "prisma-client-js"
 }
@@ -43,6 +43,7 @@ model Campaign {
   campaignStudents CampaignStudent[]
   dailySales       DailySale[]
   auditLogs        AuditLog[]
+  camps            Camp[]
 
   @@map("campaigns")
 }
@@ -61,17 +62,36 @@ model Student {
   @@map("students")
 }
 
+model Camp {
+  id              String             @id @default(uuid())
+  campaignId      String             @map("campaign_id")
+  name            String             // e.g. "ആലപ്പുഴ", "കണ്ണൂർ"
+  location        String?
+  leaderName      String?            @map("leader_name")
+  notes           String?
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  campaign         Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignStudents CampaignStudent[]
+
+  @@unique([campaignId, name])
+  @@map("camps")
+}
+
 model CampaignStudent {
-  id             String    @id @default(uuid())
-  campaignId     String    @map("campaign_id")
-  studentId      String    @map("student_id")
-  targetCalendars Int      @default(50) @map("target_calendars")
-  isActive       Boolean   @default(true) @map("is_active")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  id              String    @id @default(uuid())
+  campaignId      String    @map("campaign_id")
+  studentId       String    @map("student_id")
+  campId          String?   @map("camp_id")
+  targetCalendars Int       @default(50) @map("target_calendars")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  camp           Camp?     @relation(fields: [campId], references: [id], onDelete: SetNull)
 
   @@unique([campaignId, studentId])
   @@map("campaign_students")
