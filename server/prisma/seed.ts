@@ -47,15 +47,13 @@ const malayalamStudents = [
 ];
 
 async function main() {
-  console.log('🌱 Starting database seeding...');
+  console.log('🌱 Checking database seeding...');
 
-  // Clean existing data
-  await prisma.dailySale.deleteMany();
-  await prisma.campaignStudent.deleteMany();
-  await prisma.campaign.deleteMany();
-  await prisma.student.deleteMany();
-  await prisma.auditLog.deleteMany();
-  await prisma.user.deleteMany();
+  const userCount = await prisma.user.count();
+  if (userCount > 0) {
+    console.log('✅ Database already contains data. Skipping initial seeding to preserve user entries.');
+    return;
+  }
 
   // 1. Create Default Users
   const salt = await bcrypt.genSalt(10);
@@ -142,6 +140,40 @@ async function main() {
   }
 
   console.log(`✅ 40 Malayalam students created and linked with targets.`);
+
+  // Create Camps
+  const campAlappuzha = await prisma.camp.create({
+    data: {
+      campaignId: campaign.id,
+      name: 'ആലപ്പുഴ',
+      location: 'ആലപ്പുഴ ബീച്ച് ഏരിയ',
+      leaderName: 'മുഹമ്മദ്‌ റഫീഖ്',
+    },
+  });
+
+  const campKannur = await prisma.camp.create({
+    data: {
+      campaignId: campaign.id,
+      name: 'കണ്ണൂർ',
+      location: 'കണ്ണൂർ ടൗൺ',
+      leaderName: 'അനന്തു കൃഷ്ണൻ',
+    },
+  });
+
+  // Assign first 12 students to Alappuzha, next 12 to Kannur, rest 16 unassigned (non-camp)
+  for (let i = 0; i < 12; i++) {
+    await prisma.campaignStudent.update({
+      where: { campaignId_studentId: { campaignId: campaign.id, studentId: createdStudents[i].id } },
+      data: { campId: campAlappuzha.id },
+    });
+  }
+  for (let i = 12; i < 24; i++) {
+    await prisma.campaignStudent.update({
+      where: { campaignId_studentId: { campaignId: campaign.id, studentId: createdStudents[i].id } },
+      data: { campId: campKannur.id },
+    });
+  }
+  console.log(`✅ Camps 'ആലപ്പുഴ' & 'കണ്ണൂർ' created and students assigned.`);
 
   // 4. Seed Daily Sales for Days 1 to 7 with realistic data
   // Day 1 to Day 5 have realistic entered data, Day 6-7 partially filled to demonstrate workflow

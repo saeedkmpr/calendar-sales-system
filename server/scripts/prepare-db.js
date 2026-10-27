@@ -20,6 +20,13 @@ try {
   if (isPostgres) {
     console.log('[DB Setup] Pushing schema tables to PostgreSQL...');
     execSync(`npx prisma db push --schema="${schemaPath}" --accept-data-loss`, { stdio: 'inherit' });
+    
+    console.log('[DB Setup] Running initial seed if database is empty...');
+    try {
+      execSync(`npx tsx prisma/seed.ts`, { stdio: 'inherit', cwd: path.resolve(__dirname, '..') });
+    } catch (seedErr) {
+      console.log('[DB Setup] Seed notice:', seedErr.message);
+    }
   }
 } catch (err) {
   console.error('[DB Setup] Error during DB setup:', err.message);
