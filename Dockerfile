@@ -30,8 +30,6 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
-ENV DATABASE_URL="file:/app/server/prisma/dev.db"
-ENV JWT_SECRET="super-secure-secret-key-calendar-sales-2026"
 
 # Install openssl for Prisma runtime
 RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -40,12 +38,14 @@ COPY package*.json ./
 COPY server/package*.json ./server/
 COPY client/package*.json ./client/
 
+# Install production dependencies (including prisma and tsx in server/dependencies)
 RUN npm install --omit=dev
 
-# Copy built frontend, compiled server, and prisma database
+# Copy built frontend, compiled server, scripts, and prisma database
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/prisma ./server/prisma
+COPY --from=builder /app/server/scripts ./server/scripts
 COPY --from=builder /app/server/node_modules/.prisma ./server/node_modules/.prisma
 COPY --from=builder /app/server/node_modules/@prisma ./server/node_modules/@prisma
 
@@ -55,4 +55,4 @@ RUN chmod -R 777 /app/server/prisma /app/prisma 2>/dev/null || true
 
 EXPOSE 5000
 
-CMD ["node", "server/dist/index.js"]
+CMD ["node", "server/scripts/start.js"]
