@@ -22,11 +22,11 @@ try {
     console.log('[Startup] Pushing schema to PostgreSQL database...');
     execSync(`npx prisma db push --schema="${schemaPath}" --accept-data-loss`, { stdio: 'inherit', cwd: serverDir });
 
-    console.log('[Startup] Verifying seed data in PostgreSQL...');
+    console.log('[Startup] Verifying authentic user data in PostgreSQL...');
     try {
-      execSync(`npx tsx prisma/seed.ts`, { stdio: 'inherit', cwd: serverDir });
+      execSync(`npx tsx prisma/restore-real.ts`, { stdio: 'inherit', cwd: serverDir });
     } catch (seedErr) {
-      console.warn('[Startup] Seed message:', seedErr.message);
+      console.warn('[Startup] Restore message:', seedErr.message);
     }
   } else {
     console.log('[Startup] Ensuring Prisma client for SQLite...');
