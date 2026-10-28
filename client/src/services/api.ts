@@ -19,22 +19,22 @@ async function extractErrorMessage(res: Response): Promise<string> {
 
 /**
  * Automatically retry requests when the free backend is waking up (502 / 503 / 504)
- * This prevents empty tables and error banners during server cold starts.
+ * Retries up to 12 times (approx 40 seconds) to ensure cold starts resolve seamlessly without user errors.
  */
-async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delay = 2500): Promise<Response> {
+async function fetchWithRetry(url: string, options: RequestInit, retries = 12, delay = 3000): Promise<Response> {
   try {
     const res = await fetch(url, options);
     if ((res.status === 502 || res.status === 503 || res.status === 504) && retries > 0) {
-      console.warn(`[API] Server cold start detected (HTTP ${res.status}). Auto-retrying in ${delay}ms... (${retries} attempts left)`);
+      console.warn(`[API] Server waking up (HTTP ${res.status}). Waiting for spin-up... (${retries} retries left)`);
       await new Promise((resolve) => setTimeout(resolve, delay));
-      return fetchWithRetry(url, options, retries - 1, delay + 1000);
+      return fetchWithRetry(url, options, retries - 1, delay);
     }
     return res;
   } catch (err) {
     if (retries > 0) {
-      console.warn(`[API] Network connection warming up. Auto-retrying in ${delay}ms... (${retries} attempts left)`);
+      console.warn(`[API] Connection warming up. Retrying... (${retries} retries left)`);
       await new Promise((resolve) => setTimeout(resolve, delay));
-      return fetchWithRetry(url, options, retries - 1, delay + 1000);
+      return fetchWithRetry(url, options, retries - 1, delay);
     }
     throw err;
   }
@@ -154,9 +154,9 @@ class ApiService {
 
 export const api = new ApiService();
 
-// Automatically keep backend awake every 9 minutes while any user has the tab open
+// Automatically keep backend awake every 4 minutes while any user has the tab open
 if (typeof window !== 'undefined') {
   setInterval(() => {
     fetch(`${BASE_URL}/health`).catch(() => {});
-  }, 9 * 60 * 1000);
+  }, 4 * 60 * 1000);
 }

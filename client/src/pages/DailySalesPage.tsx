@@ -449,9 +449,17 @@ export const DailySalesPage: React.FC = () => {
       )}
 
       {saveError && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-300 text-red-800 rounded-lg text-sm">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-          <span>{saveError}</span>
+        <div className="flex items-center justify-between p-3.5 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-sm shadow-sm">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <span>{saveError}</span>
+          </div>
+          <button
+            onClick={() => fetchDayData()}
+            className="px-3.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-xs font-bold transition-all shadow-sm shrink-0"
+          >
+            {language === 'en' ? 'Retry' : 'വീണ്ടും ശ്രമിക്കുക'}
+          </button>
         </div>
       )}
 
