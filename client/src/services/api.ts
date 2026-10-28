@@ -17,6 +17,29 @@ async function extractErrorMessage(res: Response): Promise<string> {
   }
 }
 
+/**
+ * Automatically retry requests when the free backend is waking up (502 / 503 / 504)
+ * This prevents empty tables and error banners during server cold starts.
+ */
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delay = 2500): Promise<Response> {
+  try {
+    const res = await fetch(url, options);
+    if ((res.status === 502 || res.status === 503 || res.status === 504) && retries > 0) {
+      console.warn(`[API] Server cold start detected (HTTP ${res.status}). Auto-retrying in ${delay}ms... (${retries} attempts left)`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchWithRetry(url, options, retries - 1, delay + 1000);
+    }
+    return res;
+  } catch (err) {
+    if (retries > 0) {
+      console.warn(`[API] Network connection warming up. Auto-retrying in ${delay}ms... (${retries} attempts left)`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchWithRetry(url, options, retries - 1, delay + 1000);
+    }
+    throw err;
+  }
+}
+
 class ApiService {
   private getToken(): string | null {
     return localStorage.getItem('token');
@@ -34,7 +57,7 @@ class ApiService {
   }
 
   async get<T>(endpoint: string): Promise<T> {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetchWithRetry(`${BASE_URL}${endpoint}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -45,7 +68,7 @@ class ApiService {
   }
 
   async getText(endpoint: string): Promise<string> {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetchWithRetry(`${BASE_URL}${endpoint}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -56,7 +79,7 @@ class ApiService {
   }
 
   async post<T>(endpoint: string, body: any): Promise<T> {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetchWithRetry(`${BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(body),
@@ -68,7 +91,7 @@ class ApiService {
   }
 
   async put<T>(endpoint: string, body: any): Promise<T> {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetchWithRetry(`${BASE_URL}${endpoint}`, {
       method: 'PUT',
       headers: this.getHeaders(),
       body: JSON.stringify(body),
@@ -80,7 +103,7 @@ class ApiService {
   }
 
   async delete<T>(endpoint: string): Promise<T> {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetchWithRetry(`${BASE_URL}${endpoint}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -99,7 +122,7 @@ class ApiService {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetchWithRetry(`${BASE_URL}${endpoint}`, {
       method: 'GET',
       headers,
     });
@@ -130,3 +153,10 @@ class ApiService {
 }
 
 export const api = new ApiService();
+
+// Automatically keep backend awake every 9 minutes while any user has the tab open
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    fetch(`${BASE_URL}/health`).catch(() => {});
+  }, 9 * 60 * 1000);
+}
