@@ -19,8 +19,8 @@ RUN cd client && npm install --no-save @rollup/rollup-linux-x64-gnu
 COPY server/ ./server/
 COPY client/ ./client/
 
-# Generate Prisma Client & Build both client and server
-RUN cd server && npx prisma generate
+# Generate Prisma Client for PostgreSQL & Build both client and server
+RUN cd server && npx prisma generate --schema=prisma/schema.postgresql.prisma
 RUN npm run build:client
 RUN npm run build:server
 

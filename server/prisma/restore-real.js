@@ -1,11 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-import fs from 'fs';
-import path from 'path';
+const { PrismaClient } = require('@prisma/client');
+const fs = require('fs');
+const path = require('path');
 
 const prisma = new PrismaClient();
 
 async function restore() {
-  console.log('🔄 Checking if real data restore is required...');
+  console.log('🔄 Checking if authentic data restore is required...');
 
   const backupFile = path.resolve(__dirname, 'real_backup.json');
   if (!fs.existsSync(backupFile)) {
@@ -21,7 +21,7 @@ async function restore() {
   });
 
   if (existingRealStudent) {
-    console.log('✅ Real student data is already present in database. Preserving live data.');
+    console.log('✅ Authentic student data is already present. Preserving current live data.');
     return;
   }
 
@@ -150,7 +150,7 @@ async function restore() {
 
 restore()
   .catch((e) => {
-    console.error('Error during data restore:', e);
+    console.error('Error during data restore:', e.message);
   })
   .finally(async () => {
     await prisma.$disconnect();

@@ -5,6 +5,18 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+async function extractErrorMessage(res: Response): Promise<string> {
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    return 'സെർവർ ആരംഭിക്കുകയാണ് (Waking up), ദയവായി ഏതാനും നിമിഷങ്ങൾക്കകം വീണ്ടും ശ്രമിക്കുക';
+  }
+  try {
+    const err = await res.json();
+    return err.error || `HTTP error ${res.status}`;
+  } catch {
+    return `HTTP error ${res.status}`;
+  }
+}
+
 class ApiService {
   private getToken(): string | null {
     return localStorage.getItem('token');
@@ -27,8 +39,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(err.error || `HTTP error ${res.status}`);
+      throw new Error(await extractErrorMessage(res));
     }
     return res.json();
   }
@@ -39,7 +50,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
     if (!res.ok) {
-      throw new Error(`HTTP error ${res.status}`);
+      throw new Error(await extractErrorMessage(res));
     }
     return res.text();
   }
@@ -51,8 +62,7 @@ class ApiService {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(err.error || `HTTP error ${res.status}`);
+      throw new Error(await extractErrorMessage(res));
     }
     return res.json();
   }
@@ -64,8 +74,7 @@ class ApiService {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(err.error || `HTTP error ${res.status}`);
+      throw new Error(await extractErrorMessage(res));
     }
     return res.json();
   }
@@ -76,8 +85,7 @@ class ApiService {
       headers: this.getHeaders(),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(err.error || `HTTP error ${res.status}`);
+      throw new Error(await extractErrorMessage(res));
     }
     return res.json();
   }
