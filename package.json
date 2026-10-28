@@ -19,7 +19,7 @@
     "build": "npm run prisma:generate && npm run build:client && npm run build:server",
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
-    "start": "node server/scripts/start.js"
+    "start": "node server/dist/index.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

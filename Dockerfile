@@ -19,8 +19,8 @@ RUN cd client && npm install --no-save @rollup/rollup-linux-x64-gnu
 COPY server/ ./server/
 COPY client/ ./client/
 
-# Generate Prisma Client for PostgreSQL & Build both client and server
-RUN cd server && npx prisma generate --schema=prisma/schema.postgresql.prisma
+# Generate Prisma Client & Build both client and server
+RUN cd server && npx prisma generate
 RUN npm run build:client
 RUN npm run build:server
 
@@ -55,4 +55,4 @@ RUN chmod -R 777 /app/server/prisma /app/prisma 2>/dev/null || true
 
 EXPOSE 5000
 
-CMD ["node", "server/scripts/start.js"]
+CMD ["node", "server/dist/index.js"]
