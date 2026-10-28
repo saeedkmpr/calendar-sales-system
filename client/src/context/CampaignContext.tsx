@@ -15,23 +15,41 @@ const CampaignContext = createContext<CampaignContextType | undefined>(undefined
 
 export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [currentCampaign, setCurrentCampaignState] = useState<Campaign | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Load from local cache for instant zero-delay rendering
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+    try {
+      const saved = localStorage.getItem('cached_campaigns');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [currentCampaign, setCurrentCampaignState] = useState<Campaign | null>(() => {
+    try {
+      const saved = localStorage.getItem('cached_current_campaign');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const refreshCampaigns = async () => {
     if (!user) return;
     try {
-      setIsLoading(true);
       const data = await api.get<Campaign[]>('/campaigns');
       setCampaigns(data);
+      localStorage.setItem('cached_campaigns', JSON.stringify(data));
 
       const savedCampaignId = localStorage.getItem('activeCampaignId');
       if (savedCampaignId) {
         const found = data.find((c) => c.id === savedCampaignId);
         if (found) {
           setCurrentCampaignState(found);
-          setIsLoading(false);
+          localStorage.setItem('cached_current_campaign', JSON.stringify(found));
           return;
         }
       }
@@ -40,9 +58,10 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const active = data.find((c) => c.status === 'ACTIVE') || data[0];
         setCurrentCampaignState(active);
         localStorage.setItem('activeCampaignId', active.id);
+        localStorage.setItem('cached_current_campaign', JSON.stringify(active));
       }
     } catch (error) {
-      console.error('Failed to load campaigns:', error);
+      console.warn('Campaign fetch notice (using cached data):', error);
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +80,7 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setCurrentCampaign = (campaign: Campaign) => {
     setCurrentCampaignState(campaign);
     localStorage.setItem('activeCampaignId', campaign.id);
+    localStorage.setItem('cached_current_campaign', JSON.stringify(campaign));
   };
 
   return (

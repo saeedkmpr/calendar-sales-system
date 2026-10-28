@@ -19,15 +19,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
   children,
   adminOnly = false,
 }) => {
-  const { user, isLoading, isAdmin } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white font-medium">
-        ലോഡ് ചെയ്യുന്നു... ദയവായി കാത്തിരിക്കുക.
-      </div>
-    );
-  }
+  const { user, isAdmin } = useAuth();
 
   if (!user) {
     return <Navigate to="/login" replace />;
