@@ -458,12 +458,17 @@ async function getLeaderboardData(campaignId: string) {
     salesByStudent[s.studentId].exp += s.expenses;
   });
 
+  const returnPct = campaign.studentReturnPercentage || 0;
+
   const studentRows = campaign.campaignStudents.map((cs) => {
     const agg = salesByStudent[cs.studentId] || { taken: 0, sold: 0, cash: 0, exp: 0 };
     const totalNetCash = agg.cash - agg.exp;
     const remainingStock = agg.taken - agg.sold;
     const targetRemaining = Math.max(0, cs.targetCalendars - agg.sold);
     const average = agg.sold > 0 ? parseFloat((totalNetCash / agg.sold).toFixed(2)) : 0;
+    const studentShare = totalNetCash > 0 && returnPct > 0
+      ? parseFloat(((totalNetCash * returnPct) / 100).toFixed(2))
+      : 0;
 
     return {
       studentId: cs.studentId,
@@ -478,6 +483,7 @@ async function getLeaderboardData(campaignId: string) {
       totalExpenses: agg.exp,
       totalNetCash,
       average,
+      studentShare,
     };
   });
 
@@ -501,6 +507,7 @@ async function getLeaderboardData(campaignId: string) {
   const totalExpenses = rankedRows.reduce((acc, r) => acc + r.totalExpenses, 0);
   const totalNetCash = totalCashReceived - totalExpenses;
   const weightedAverage = totalSold > 0 ? parseFloat((totalNetCash / totalSold).toFixed(2)) : 0;
+  const totalStudentShare = rankedRows.reduce((acc, r) => acc + (r.studentShare || 0), 0);
 
   const totals = {
     totalTarget,
@@ -512,6 +519,8 @@ async function getLeaderboardData(campaignId: string) {
     totalExpenses,
     totalNetCash,
     weightedAverage,
+    totalStudentShare: parseFloat(totalStudentShare.toFixed(2)),
+    studentReturnPercentage: returnPct,
   };
 
   return { campaign, rows: rankedRows, totals };

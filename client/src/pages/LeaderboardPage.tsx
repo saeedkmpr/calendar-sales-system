@@ -85,6 +85,7 @@ export const LeaderboardPage: React.FC = () => {
   });
 
   const currency = currentCampaign?.currency || '₹';
+  const returnPercentage = currentCampaign?.studentReturnPercentage || totals?.studentReturnPercentage || 0;
 
   if (!currentCampaign) {
     return (
@@ -160,9 +161,9 @@ export const LeaderboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Top 4 KPI Summary Cards */}
+      {/* Top KPI Summary Cards */}
       {totals && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className={`grid grid-cols-2 ${returnPercentage > 0 ? 'lg:grid-cols-6' : 'lg:grid-cols-5'} gap-3.5`}>
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
             <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
               {language === 'en' ? 'Total Calendars Sold' : 'ആകെ വിറ്റ കലണ്ടർ'}
@@ -222,6 +223,20 @@ export const LeaderboardPage: React.FC = () => {
               {language === 'en' ? `Avg: ₹${totals.weightedAverage}` : `ശരാശരി: ₹${totals.weightedAverage}`}
             </span>
           </div>
+
+          {returnPercentage > 0 && (
+            <div className="bg-white p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50/20 shadow-xs col-span-2 lg:col-span-1">
+              <span className="text-2xs font-bold text-indigo-900 uppercase tracking-wider block">
+                {language === 'en' ? 'Student Share' : 'വിദ്യാർത്ഥി വിഹിതം'}
+              </span>
+              <div className="text-xl sm:text-2xl font-black text-indigo-700 mt-1">
+                {currency}{totals.totalStudentShare !== undefined ? totals.totalStudentShare : 0}
+              </div>
+              <span className="text-2xs text-indigo-700 font-medium mt-0.5 block">
+                {language === 'en' ? `${returnPercentage}% of Net Cash` : `ബാക്കി കാശിന്റെ ${returnPercentage}%`}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -285,19 +300,24 @@ export const LeaderboardPage: React.FC = () => {
                 <th className="py-3.5 px-3 font-semibold text-right">
                   {language === 'en' ? 'Average' : 'ശരാശരി'}
                 </th>
+                <th className="py-3.5 px-4 font-bold text-right bg-indigo-900/90 text-indigo-200">
+                  {language === 'en'
+                    ? (returnPercentage > 0 ? `Student Share (${returnPercentage}%)` : 'Student Share')
+                    : (returnPercentage > 0 ? `വിദ്യാർത്ഥി വിഹിതം (${returnPercentage}%)` : 'വിദ്യാർത്ഥി വിഹിതം')}
+                </th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={12} className="py-16 text-center text-slate-400">
+                  <td colSpan={13} className="py-16 text-center text-slate-400">
                     {language === 'en' ? 'Loading leaderboard...' : 'കണക്കുകൾ ലോഡ് ചെയ്യുന്നു...'}
                   </td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-16 text-center text-slate-400">
+                  <td colSpan={13} className="py-16 text-center text-slate-400">
                     {language === 'en' ? 'No records found.' : 'വിവരങ്ങൾ കണ്ടെത്തിയില്ല.'}
                   </td>
                 </tr>
@@ -384,6 +404,10 @@ export const LeaderboardPage: React.FC = () => {
                       <td className="py-3 px-3 text-right font-semibold text-slate-600">
                         {currency}{r.average}
                       </td>
+
+                      <td className="py-3 px-4 text-right font-black text-indigo-900 bg-indigo-50/40">
+                        {currency}{r.studentShare !== undefined ? r.studentShare : (returnPercentage > 0 && r.totalNetCash > 0 ? parseFloat(((r.totalNetCash * returnPercentage) / 100).toFixed(2)) : 0)}
+                      </td>
                     </tr>
                   );
                 })
@@ -423,6 +447,9 @@ export const LeaderboardPage: React.FC = () => {
                   </td>
                   <td className="py-3.5 px-3 text-right font-bold text-slate-200">
                     {currency}{totals.weightedAverage}
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-black text-indigo-300 bg-indigo-950/90 text-base">
+                    {currency}{totals.totalStudentShare !== undefined ? totals.totalStudentShare : 0}
                   </td>
                 </tr>
               </tfoot>

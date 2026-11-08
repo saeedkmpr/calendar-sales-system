@@ -16,6 +16,7 @@ const campaignSchema = z.object({
   endDate: z.string(),
   durationDays: z.number().int().min(1).default(7),
   calendarPrice: z.number().positive().default(100.0),
+  studentReturnPercentage: z.number().min(0).max(100).default(0.0),
   currency: z.string().default('₹'),
   description: z.string().optional(),
   status: z.enum(['ACTIVE', 'COMPLETED', 'ARCHIVED', 'CANCELLED']).default('ACTIVE'),
@@ -84,6 +85,7 @@ campaignsRouter.post('/', requireRole(['ADMIN']), async (req: AuthenticatedReque
         endDate: new Date(data.endDate),
         durationDays: data.durationDays,
         calendarPrice: data.calendarPrice,
+        studentReturnPercentage: data.studentReturnPercentage ?? 0.0,
         currency: data.currency,
         description: data.description,
         status: data.status,
@@ -488,12 +490,17 @@ campaignsRouter.get('/:id/leaderboard', async (req: AuthenticatedRequest, res: R
       salesByStudent[s.studentId].exp += s.expenses;
     });
 
+    const returnPct = campaign.studentReturnPercentage || 0;
+
     const studentRows = campaign.campaignStudents.map((cs) => {
       const agg = salesByStudent[cs.studentId] || { taken: 0, sold: 0, cash: 0, exp: 0 };
       const totalNetCash = agg.cash - agg.exp;
       const remainingStock = agg.taken - agg.sold;
       const targetRemaining = Math.max(0, cs.targetCalendars - agg.sold);
       const average = agg.sold > 0 ? parseFloat((totalNetCash / agg.sold).toFixed(2)) : 0;
+      const studentShare = totalNetCash > 0 && returnPct > 0
+        ? parseFloat(((totalNetCash * returnPct) / 100).toFixed(2))
+        : 0;
 
       return {
         studentId: cs.studentId,
@@ -508,6 +515,7 @@ campaignsRouter.get('/:id/leaderboard', async (req: AuthenticatedRequest, res: R
         totalExpenses: agg.exp,
         totalNetCash,
         average,
+        studentShare,
       };
     });
 
@@ -538,6 +546,7 @@ campaignsRouter.get('/:id/leaderboard', async (req: AuthenticatedRequest, res: R
     const totalExpenses = rankedRows.reduce((acc, r) => acc + r.totalExpenses, 0);
     const totalNetCash = totalCashReceived - totalExpenses;
     const weightedAverage = totalSold > 0 ? parseFloat((totalNetCash / totalSold).toFixed(2)) : 0;
+    const totalStudentShare = rankedRows.reduce((acc, r) => acc + (r.studentShare || 0), 0);
 
     const totals = {
       totalTarget,
@@ -549,6 +558,8 @@ campaignsRouter.get('/:id/leaderboard', async (req: AuthenticatedRequest, res: R
       totalExpenses,
       totalNetCash,
       weightedAverage,
+      totalStudentShare: parseFloat(totalStudentShare.toFixed(2)),
+      studentReturnPercentage: returnPct,
     };
 
     res.json({
@@ -557,6 +568,7 @@ campaignsRouter.get('/:id/leaderboard', async (req: AuthenticatedRequest, res: R
         name: campaign.name,
         institutionName: campaign.institutionName,
         calendarPrice: campaign.calendarPrice,
+        studentReturnPercentage: returnPct,
         currency: campaign.currency,
       },
       rows: rankedRows,

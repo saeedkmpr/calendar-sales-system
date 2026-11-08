@@ -18,6 +18,7 @@ export interface Campaign {
   endDate: string;
   durationDays: number;
   calendarPrice: number;
+  studentReturnPercentage?: number;
   currency: string;
   description?: string;
   status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'CANCELLED';

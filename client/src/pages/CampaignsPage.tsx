@@ -25,6 +25,7 @@ export const CampaignsPage: React.FC = () => {
   const [name, setName] = useState<string>('');
   const [institutionName, setInstitutionName] = useState<string>('');
   const [calendarPrice, setCalendarPrice] = useState<number>(100);
+  const [studentReturnPercentage, setStudentReturnPercentage] = useState<number>(33);
   const [startDate, setStartDate] = useState<string>('2026-11-01');
   const [endDate, setEndDate] = useState<string>('2026-11-07');
   const [durationDays, setDurationDays] = useState<number>(7);
@@ -55,6 +56,7 @@ export const CampaignsPage: React.FC = () => {
   const [editName, setEditName] = useState<string>('');
   const [editInstitutionName, setEditInstitutionName] = useState<string>('');
   const [editCalendarPrice, setEditCalendarPrice] = useState<number>(100);
+  const [editStudentReturnPercentage, setEditStudentReturnPercentage] = useState<number>(0);
   const [editStartDate, setEditStartDate] = useState<string>('2026-11-01');
   const [editEndDate, setEditEndDate] = useState<string>('2026-11-07');
   const [editDurationDays, setEditDurationDays] = useState<number>(7);
@@ -67,6 +69,7 @@ export const CampaignsPage: React.FC = () => {
     setEditName(c.name);
     setEditInstitutionName(c.institutionName || '');
     setEditCalendarPrice(c.calendarPrice || 100);
+    setEditStudentReturnPercentage(c.studentReturnPercentage !== undefined ? c.studentReturnPercentage : 0);
     const sDate = c.startDate ? c.startDate.slice(0, 10) : '2026-11-01';
     const eDate = c.endDate ? c.endDate.slice(0, 10) : '2026-11-07';
     setEditStartDate(sDate);
@@ -87,6 +90,7 @@ export const CampaignsPage: React.FC = () => {
         name: editName,
         institutionName: editInstitutionName,
         calendarPrice: editCalendarPrice,
+        studentReturnPercentage: editStudentReturnPercentage,
         startDate: new Date(editStartDate).toISOString(),
         endDate: new Date(editEndDate).toISOString(),
         durationDays: editDurationDays,
@@ -164,6 +168,7 @@ export const CampaignsPage: React.FC = () => {
         name,
         institutionName,
         calendarPrice,
+        studentReturnPercentage,
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
         durationDays,
@@ -308,6 +313,12 @@ export const CampaignsPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span>{language === 'en' ? 'Students:' : 'ആകെ കുട്ടികൾ:'}</span>
                     <strong className="text-slate-800">{c.studentCount || 0}</strong>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                    <span className="text-slate-600 font-medium">{language === 'en' ? 'Student Share:' : 'കുട്ടികളുടെ വിഹിതം:'}</span>
+                    <strong className="text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded text-2xs font-bold">
+                      {c.studentReturnPercentage || 0}%
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -571,6 +582,30 @@ export const CampaignsPage: React.FC = () => {
                   {language === 'en' ? '(Auto-generates Day tabs)' : '(അത്രയും ഡേ ടാബുകൾ വരും)'}
                 </span>
               </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {language === 'en' ? 'Student Return Share (%)' : 'കുട്ടികൾക്കുള്ള വിഹിതം / റിട്ടേൺ (%)'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={studentReturnPercentage}
+                    onChange={(e) => setStudentReturnPercentage(parseFloat(e.target.value) || 0)}
+                    placeholder="33"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold pr-8 text-emerald-900"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">%</span>
+                </div>
+                <p className="text-2xs text-slate-500 mt-1">
+                  {language === 'en'
+                    ? 'Percentage of net cash allocated as student return (e.g. 33% of ₹1000 = ₹330)'
+                    : 'ആകെ ബാക്കി കാശിൽ നിന്ന് വിദ്യാർത്ഥിക്ക് നൽകുന്ന വിഹിതം (ഉദാ: ₹1000-ൽ 33% = ₹330)'}
+                </p>
+              </div>
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -716,6 +751,30 @@ export const CampaignsPage: React.FC = () => {
                 <span className="text-2xs text-emerald-700 font-medium">
                   {language === 'en' ? '(Auto-generates Day tabs)' : '(അത്രയും ഡേ ടാബുകൾ വരും)'}
                 </span>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {language === 'en' ? 'Student Return Share (%)' : 'കുട്ടികൾക്കുള്ള വിഹിതം / റിട്ടേൺ (%)'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={editStudentReturnPercentage}
+                    onChange={(e) => setEditStudentReturnPercentage(parseFloat(e.target.value) || 0)}
+                    placeholder="33"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold pr-8 text-emerald-900"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">%</span>
+                </div>
+                <p className="text-2xs text-slate-500 mt-1">
+                  {language === 'en'
+                    ? 'Percentage of net cash allocated as student return (e.g. 33% of ₹1000 = ₹330)'
+                    : 'ആകെ ബാക്കി കാശിൽ നിന്ന് വിദ്യാർത്ഥിക്ക് നൽകുന്ന വിഹിതം (ഉദാ: ₹1000-ൽ 33% = ₹330)'}
+                </p>
               </div>
 
               <div>

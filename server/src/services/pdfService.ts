@@ -382,6 +382,7 @@ export class PdfService {
     rows: any[],
     totals: any
   ): string {
+    const returnPct = campaign.studentReturnPercentage || 0;
     const tableRows = rows.map((r) => `<tr>
       <td style="font-weight: 700;">#${r.rank}</td>
       <td>${r.studentCode}</td>
@@ -395,6 +396,7 @@ export class PdfService {
       <td>₹${r.totalExpenses}</td>
       <td style="font-weight: 700; color: #047857;">₹${r.totalNetCash}</td>
       <td>₹${r.average}</td>
+      <td style="font-weight: 700; color: #1e40af;">₹${r.studentShare !== undefined ? r.studentShare : 0}</td>
     </tr>`).join('');
 
     return `<!DOCTYPE html>
@@ -471,6 +473,7 @@ export class PdfService {
         <th>ആകെ ചെലവ്</th>
         <th>ആകെ ബാക്കി കാശ്</th>
         <th>ശരാശരി</th>
+        <th>വിദ്യാർത്ഥി വിഹിതം ${returnPct > 0 ? `(${returnPct}%)` : ''}</th>
       </tr>
     </thead>
     <tbody>
@@ -486,6 +489,7 @@ export class PdfService {
         <td>₹${totals.totalExpenses}</td>
         <td>₹${totals.totalNetCash}</td>
         <td>₹${totals.weightedAverage}</td>
+        <td style="color: #1e40af;">₹${totals.totalStudentShare !== undefined ? totals.totalStudentShare : 0}</td>
       </tr>
     </tbody>
   </table>

@@ -33,6 +33,7 @@ model Campaign {
   endDate         DateTime           @map("end_date")
   durationDays    Int                @default(7) @map("duration_days")
   calendarPrice   Float              @default(100.0) @map("calendar_price")
+  studentReturnPercentage Float      @default(0.0) @map("student_return_percentage")
   currency        String             @default("₹")
   description     String?
   status          String             @default("ACTIVE") // ACTIVE, COMPLETED, ARCHIVED

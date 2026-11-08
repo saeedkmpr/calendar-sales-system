@@ -452,11 +452,14 @@ export class ExcelService {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('കുട്ടികളുടെ ആകെ കണക്ക്');
 
-    sheet.mergeCells('A1:L1');
+    sheet.mergeCells('A1:M1');
     const title = sheet.getCell('A1');
     title.value = `${campaignName} — കുട്ടികളുടെ ആകെ കണക്കും റാങ്കിംഗും (Student Leaderboard)`;
     title.font = { name: 'Segoe UI', size: 14, bold: true };
     title.alignment = { horizontal: 'center' };
+
+    const returnPct = totals.studentReturnPercentage || 0;
+    const shareHeader = returnPct > 0 ? `വിദ്യാർത്ഥി വിഹിതം (${returnPct}%)` : 'വിദ്യാർത്ഥി വിഹിതം';
 
     const headers = [
       'റാങ്ക്',
@@ -471,6 +474,7 @@ export class ExcelService {
       'ആകെ ചെലവ്',
       'ആകെ ബാക്കി കാശ്',
       'ശരാശരി',
+      shareHeader,
     ];
 
     const hRow = sheet.addRow(headers);
@@ -499,6 +503,7 @@ export class ExcelService {
         r.totalExpenses,
         r.totalNetCash,
         r.average,
+        r.studentShare !== undefined ? r.studentShare : 0,
       ]);
       row.alignment = { vertical: 'middle', horizontal: 'center' };
       row.getCell(3).alignment = { vertical: 'middle', horizontal: 'left' };
@@ -517,6 +522,7 @@ export class ExcelService {
       totals.totalExpenses,
       totals.totalNetCash,
       totals.weightedAverage,
+      totals.totalStudentShare !== undefined ? totals.totalStudentShare : 0,
     ]);
     sumRow.height = 22;
     sumRow.eachCell((cell) => {
