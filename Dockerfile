@@ -41,11 +41,10 @@ COPY client/package*.json ./client/
 # Install production dependencies (including prisma and tsx in server/dependencies)
 RUN npm install --omit=dev
 
-# Copy built frontend, compiled server, scripts, and prisma database
+# Copy built frontend, compiled server, and prisma database
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/prisma ./server/prisma
-COPY --from=builder /app/server/scripts ./server/scripts
 COPY --from=builder /app/server/node_modules/.prisma ./server/node_modules/.prisma
 COPY --from=builder /app/server/node_modules/@prisma ./server/node_modules/@prisma
 
